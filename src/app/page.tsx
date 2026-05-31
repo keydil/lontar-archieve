@@ -340,7 +340,7 @@ export default function Home() {
           {collections.map((item, idx) => (
             <div
               key={item.id}
-              className="grid-item"
+              className={`grid-item ${item.maintenance ? 'maintenance-card' : ''}`}
               style={{
                 padding: '2.5rem 2rem',
                 borderRight: idx < collections.length - 1 ? '1px solid var(--border)' : 'none',

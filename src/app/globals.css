@@ -201,6 +201,45 @@ body {
   color: var(--charcoal);
 }
 
+/* Maintenance Card / Police Tape X Mark */
+.maintenance-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.maintenance-card > * {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.maintenance-card::after,
+.maintenance-card::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -25%;
+  width: 150%;
+  height: 24px;
+  background: repeating-linear-gradient(
+    45deg,
+    #d4b882,
+    #d4b882 15px,
+    #222 15px,
+    #222 30px
+  );
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.maintenance-card::after {
+  transform: translateY(-50%) rotate(35deg);
+}
+
+.maintenance-card::before {
+  transform: translateY(-50%) rotate(-35deg);
+}
+
 /* ============================================================ */
 /* KOLEKSI — Collection Page Styles                             */
 /* ============================================================ */
