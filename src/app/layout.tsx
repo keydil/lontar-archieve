@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { ClientMusicWrapper } from '@/components/ClientMusicWrapper'
 
 export const metadata: Metadata = {
   title: 'Arsip Naskah Lontar — Digital Archive',
@@ -13,7 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id">
-      <body>{children}</body>
+      <body>
+        <ClientMusicWrapper>
+          {children}
+        </ClientMusicWrapper>
+      </body>
     </html>
   )
 }
