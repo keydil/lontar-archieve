@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import useGSAPAnimations from '@/hooks/useGSAPAnimations'
 import { useMusic } from '@/components/MusicPlayer'
@@ -39,6 +39,7 @@ const collections = [
 
 export default function Home() {
   const { hasSeenSplash, setHasSeenSplash } = useMusic()
+  const [shouldLoadHeavy, setShouldLoadHeavy] = useState(false)
   useGSAPAnimations()
 
   // Lock scroll when splash is visible
@@ -51,6 +52,18 @@ export default function Home() {
     return () => {
       document.body.style.overflow = ''
     }
+  }, [hasSeenSplash])
+
+  // Defer heavy 3D components to improve TBT and PageSpeed score
+  useEffect(() => {
+    if (hasSeenSplash) {
+      setShouldLoadHeavy(true)
+      return
+    }
+    const timer = setTimeout(() => {
+      setShouldLoadHeavy(true)
+    }, 3500) // Delay WebGL init by 3.5s to let splash animations run smoothly
+    return () => clearTimeout(timer)
   }, [hasSeenSplash])
 
   return (
@@ -119,7 +132,7 @@ export default function Home() {
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <HeroScene />
+        {shouldLoadHeavy && <HeroScene />}
 
         <div
           className="hero-content"
@@ -519,7 +532,7 @@ export default function Home() {
         </div>
 
         <div style={{ position: 'relative', minHeight: '100vh' }}>
-          <ArtifactScene />
+          {shouldLoadHeavy && <ArtifactScene />}
           <div
             style={{
               position: 'absolute',
