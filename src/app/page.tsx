@@ -1,9 +1,10 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import useGSAPAnimations from '@/hooks/useGSAPAnimations'
+import { useMusic } from '@/components/MusicPlayer'
 
 // Dynamic imports to avoid SSR issues with Three.js
 const HeroScene = dynamic(() => import('@/components/HeroScene'), { ssr: false })
@@ -36,12 +37,12 @@ const collections = [
 ]
 
 export default function Home() {
-  const [showSplash, setShowSplash] = useState(true)
+  const { hasSeenSplash, setHasSeenSplash } = useMusic()
   useGSAPAnimations()
 
   // Lock scroll when splash is visible
   useEffect(() => {
-    if (showSplash) {
+    if (!hasSeenSplash) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
@@ -49,11 +50,11 @@ export default function Home() {
     return () => {
       document.body.style.overflow = ''
     }
-  }, [showSplash])
+  }, [hasSeenSplash])
 
   return (
     <>
-      {showSplash && <SplashScreen onEnter={() => setShowSplash(false)} />}
+      {!hasSeenSplash && <SplashScreen onEnter={() => setHasSeenSplash(true)} />}
       <CustomCursor />
 
       {/* NAV */}

@@ -8,6 +8,8 @@ interface MusicContextType {
   isPlaying: boolean
   toggleMute: () => void
   startMusic: () => void
+  hasSeenSplash: boolean
+  setHasSeenSplash: (val: boolean) => void
 }
 
 const MusicContext = createContext<MusicContextType>({
@@ -15,6 +17,8 @@ const MusicContext = createContext<MusicContextType>({
   isPlaying: false,
   toggleMute: () => {},
   startMusic: () => {},
+  hasSeenSplash: false,
+  setHasSeenSplash: () => {},
 })
 
 export const useMusic = () => useContext(MusicContext)
@@ -24,6 +28,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isMuted, setIsMuted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [hasSeenSplash, setHasSeenSplashState] = useState(false)
 
   // Init audio once
   useEffect(() => {
@@ -31,6 +36,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     audio.loop = true
     audio.volume = 0.6
     audioRef.current = audio
+
+    // Check if splash was seen in this session
+    if (sessionStorage.getItem('hasSeenSplash')) {
+      setHasSeenSplashState(true)
+    }
 
     return () => {
       audio.pause()
@@ -62,8 +72,15 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setIsMuted(!isMuted)
   }, [isMuted, isPlaying])
 
+  const setHasSeenSplash = useCallback((val: boolean) => {
+    setHasSeenSplashState(val)
+    if (val) {
+      sessionStorage.setItem('hasSeenSplash', 'true')
+    }
+  }, [])
+
   return (
-    <MusicContext.Provider value={{ isMuted, isPlaying, toggleMute, startMusic }}>
+    <MusicContext.Provider value={{ isMuted, isPlaying, toggleMute, startMusic, hasSeenSplash, setHasSeenSplash }}>
       {children}
     </MusicContext.Provider>
   )
