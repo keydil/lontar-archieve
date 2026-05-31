@@ -60,20 +60,7 @@ export default function KoleksiPage() {
       <CustomCursor />
 
       {/* FIXED NAV — minimal */}
-      <nav
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1.5rem 3rem',
-          mixBlendMode: 'multiply',
-        }}
-      >
+      <nav className="global-nav">
         <Link
           href="/"
           style={{
@@ -87,7 +74,7 @@ export default function KoleksiPage() {
         >
           Arsip Lontar
         </Link>
-        <ul style={{ display: 'flex', gap: '2rem', listStyle: 'none' }}>
+        <ul>
           {[
             { label: 'Koleksi', href: '/koleksi' },
             { label: 'Arsip', href: '#' },

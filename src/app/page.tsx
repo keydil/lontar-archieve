@@ -72,20 +72,7 @@ export default function Home() {
       <CustomCursor />
 
       {/* NAV */}
-      <nav
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1.5rem 3rem',
-          mixBlendMode: 'multiply',
-        }}
-      >
+      <nav className="global-nav">
         <div
           className="nav-logo"
           style={{
@@ -99,7 +86,7 @@ export default function Home() {
         >
           Arsip Lontar
         </div>
-        <ul style={{ display: 'flex', gap: '2rem', listStyle: 'none' }}>
+        <ul>
           {[
             { label: 'Koleksi', href: '/koleksi' },
             { label: 'Arsip', href: '#' },

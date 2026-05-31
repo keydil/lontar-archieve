@@ -696,3 +696,44 @@ body {
   }
 }
 
+/* ============================================================ */
+/* GLOBAL NAVIGATION                                            */
+/* ============================================================ */
+.global-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 3rem;
+  background-color: rgba(240, 237, 230, 0.9); /* Bone color with transparency */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.global-nav ul {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+
+@media (max-width: 768px) {
+  .global-nav {
+    padding: 1rem 1.5rem;
+    flex-wrap: wrap; /* allow wrapping on very small screens */
+    gap: 1rem;
+  }
+  .global-nav ul {
+    gap: 1rem;
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .global-nav .nav-link {
+    font-size: 8px; /* Slightly smaller text on mobile */
+  }
+}
