@@ -35,7 +35,7 @@ export const artifacts: Artifact[] = [
     type: 'Footwear',
     material: 'Genuine Leather',
     dimensions: '30 × 12 × 20 cm',
-    artist: 'Fadhil',
+    artist: 'Demo Scan',
     country: 'Indonesia',
     address: 'Lab Digitalisasi, Bandung',
     description_id:
