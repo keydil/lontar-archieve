@@ -35,13 +35,13 @@ export const artifacts: Artifact[] = [
     type: 'Footwear',
     material: 'Genuine Leather',
     dimensions: '30 × 12 × 20 cm',
-    artist: 'Demo Scan',
+    artist: 'Fadhil',
     country: 'Indonesia',
     address: 'Lab Digitalisasi, Bandung',
     description_id:
-      'Objek demo scan pertama menggunakan Kiri Engine photogrammetry. Sepatu boots kulit asli dengan detail jahitan tangan dan sol karet tebal. Dipindai secara 3D untuk menguji pipeline digitalisasi artefak berbasis video scanning.',
+      'Objek purwarupa 3D pertama berupa sepatu boots kulit asli dengan detail jahitan tangan dan sol karet tebal. Dipindai secara 3D menggunakan teknik fotogrametri khusus untuk menguji ketepatan tekstur dan geometri pada pipeline digitalisasi artefak.',
     description_en:
-      'First demo scan object using Kiri Engine photogrammetry. Genuine leather boots with hand-stitched details and thick rubber sole. 3D-scanned to test the video-based artifact digitization pipeline.',
+      'First 3D prototype object featuring genuine leather boots with hand-stitched details and a thick rubber sole. 3D-scanned using custom photogrammetry techniques to test texture and geometry accuracy within the artifact digitization pipeline.',
     hotspots: [
       {
         id: 'hs-1',
