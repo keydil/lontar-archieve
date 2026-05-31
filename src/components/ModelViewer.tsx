@@ -305,6 +305,7 @@ export default function ModelViewer({
       <Canvas
         camera={{ position: [0, 1, 5], fov: 45 }}
         shadows
+        dpr={[1, 1.5]} // Capping Device Pixel Ratio saves massive amounts of GPU fill-rate on mobile
         gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
         style={{ width: '100%', height: '100%', background: 'transparent' }}
       >
@@ -317,8 +318,8 @@ export default function ModelViewer({
           intensity={2.2}
           color="#FFF5E0"
           castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
+          shadow-mapSize-width={1024} // Reduced from 2048 for much better mobile performance
+          shadow-mapSize-height={1024}
         />
 
         {/* Fill light */}
