@@ -1,0 +1,278 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@300;400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bone: #F0EDE6;
+  --charcoal: #111110;
+  --warm: #8C8A85;
+  --border: rgba(17, 17, 16, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bone);
+  color: var(--charcoal);
+  font-family: 'DM Mono', monospace;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* Custom Cursor */
+.cursor {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background: var(--charcoal);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: multiply;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s ease;
+}
+
+.cursor-ring {
+  position: fixed;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--charcoal);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  mix-blend-mode: multiply;
+  transform: translate(-50%, -50%);
+  transition: transform 0.12s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.cursor-ring.hovered {
+  width: 56px;
+  height: 56px;
+}
+
+/* Nav */
+.nav-link {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--charcoal);
+  text-decoration: none;
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--charcoal);
+  transition: width 0.4s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* Hero */
+.hero-h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(72px, 13vw, 160px);
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  color: var(--charcoal);
+}
+
+.hero-h1 em {
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Scroll line animation */
+@keyframes scrollPulse {
+  0%, 100% { transform: scaleY(1); opacity: 0.4; }
+  50% { transform: scaleY(0.3); opacity: 1; }
+}
+
+.scroll-line {
+  width: 1px;
+  height: 60px;
+  background: var(--charcoal);
+  transform-origin: top;
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+
+/* Ticker */
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  display: flex;
+  gap: 3rem;
+  animation: tickerScroll 20s linear infinite;
+  white-space: nowrap;
+}
+
+/* Manifesto words */
+.manifesto-word {
+  display: inline-block;
+  margin-right: 0.25em;
+}
+
+/* Grid item hover fill */
+.grid-item {
+  position: relative;
+  overflow: hidden;
+  cursor: none;
+}
+
+.grid-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--charcoal);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.5s cubic-bezier(0.76, 0, 0.24, 1);
+  z-index: 0;
+}
+
+.grid-item:hover::before {
+  transform: scaleY(1);
+}
+
+.grid-item:hover .gi-text {
+  color: var(--bone) !important;
+}
+
+.grid-item > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* CTA line */
+.cta-line {
+  display: inline-block;
+  width: 40px;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.4s ease;
+}
+
+.hero-cta:hover .cta-line {
+  width: 80px;
+}
+
+.gi-link:hover .cta-line {
+  width: 40px;
+}
+
+/* Footer link hover */
+.footer-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--warm);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+  color: var(--charcoal);
+}
+
+/* ============================================================ */
+/* KOLEKSI — Collection Page Styles                             */
+/* ============================================================ */
+
+/* Card hover fill effect — same pattern as .grid-item */
+.koleksi-card {
+  position: relative;
+  overflow: hidden;
+  cursor: none;
+}
+
+.koleksi-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--charcoal);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.5s cubic-bezier(0.76, 0, 0.24, 1);
+  z-index: 0;
+}
+
+.koleksi-card:hover::before {
+  transform: scaleY(1);
+}
+
+.koleksi-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.koleksi-card:hover .koleksi-card-name,
+.koleksi-card:hover .koleksi-card-type,
+.koleksi-card:hover .koleksi-card-cta {
+  color: var(--bone) !important;
+}
+
+.koleksi-card:hover .cta-line {
+  width: 40px !important;
+  background: var(--bone) !important;
+}
+
+/* Detail panel custom scrollbar */
+.detail-panel::-webkit-scrollbar {
+  width: 3px;
+}
+
+.detail-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detail-panel::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+/* Detail back link hover */
+.detail-back:hover,
+.koleksi-nav-back:hover {
+  color: var(--charcoal) !important;
+}
+
+/* Hotspot button hover */
+.detail-hotspot-btn:hover {
+  border-color: var(--charcoal) !important;
+}
+
+/* Responsive — Koleksi Grid */
+@media (max-width: 768px) {
+  .koleksi-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .koleksi-card {
+    border-right: none !important;
+  }
+}
