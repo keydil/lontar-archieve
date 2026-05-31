@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import useGSAPAnimations from '@/hooks/useGSAPAnimations'
 
@@ -9,6 +9,7 @@ import useGSAPAnimations from '@/hooks/useGSAPAnimations'
 const HeroScene = dynamic(() => import('@/components/HeroScene'), { ssr: false })
 const ArtifactScene = dynamic(() => import('@/components/ArtifactScene'), { ssr: false })
 const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false })
+const SplashScreen = dynamic(() => import('@/components/SplashScreen'), { ssr: false })
 
 const manifestoText =
   'Setiap goresan aksara di atas daun lontar adalah warisan yang tak ternilai — jendela menuju peradaban Nusantara yang agung, menunggu untuk dibaca kembali oleh generasi yang akan datang.'
@@ -35,10 +36,24 @@ const collections = [
 ]
 
 export default function Home() {
+  const [showSplash, setShowSplash] = useState(true)
   useGSAPAnimations()
+
+  // Lock scroll when splash is visible
+  useEffect(() => {
+    if (showSplash) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [showSplash])
 
   return (
     <>
+      {showSplash && <SplashScreen onEnter={() => setShowSplash(false)} />}
       <CustomCursor />
 
       {/* NAV */}
