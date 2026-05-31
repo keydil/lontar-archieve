@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -14,6 +15,7 @@ const CardPreview = dynamic(() => import('@/components/CardPreview'), { ssr: fal
 
 export default function KoleksiPage() {
   const headerRef = useRef<HTMLDivElement>(null)
+  const pathname = usePathname()
 
   useEffect(() => {
     // Header reveal
@@ -80,17 +82,24 @@ export default function KoleksiPage() {
             { label: 'Arsip', href: '#' },
             { label: 'Riset', href: '#' },
             { label: 'Kontak', href: '#' },
-          ].map((item) => (
-            <li key={item.label}>
-              <Link
-                href={item.href}
-                className="nav-link"
-                style={{ fontFamily: "'DM Mono', monospace" }}
-              >
-                {item.label}
-              </Link>
-            </li>
-          ))}
+          ].map((item) => {
+            const isActive =
+              item.href === '/'
+                ? pathname === '/'
+                : pathname?.startsWith(item.href)
+
+            return (
+              <li key={item.label}>
+                <Link
+                  href={item.href}
+                  className={`nav-link ${isActive ? 'nav-active' : ''}`}
+                  style={{ fontFamily: "'DM Mono', monospace" }}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       </nav>
 

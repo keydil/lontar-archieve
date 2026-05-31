@@ -86,6 +86,16 @@ body {
   width: 100%;
 }
 
+.nav-active {
+  font-weight: 700;
+  color: var(--charcoal);
+}
+
+.nav-active::after {
+  width: 100%;
+  background: var(--charcoal);
+}
+
 /* Hero */
 .hero-h1 {
   font-family: 'Playfair Display', serif;

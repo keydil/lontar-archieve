@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import useGSAPAnimations from '@/hooks/useGSAPAnimations'
 import { useMusic } from '@/components/MusicPlayer'
 
@@ -40,6 +41,7 @@ const collections = [
 export default function Home() {
   const { hasSeenSplash, setHasSeenSplash } = useMusic()
   const [shouldLoadHeavy, setShouldLoadHeavy] = useState(false)
+  const pathname = usePathname()
   useGSAPAnimations()
 
   // Lock scroll when splash is visible
@@ -92,17 +94,24 @@ export default function Home() {
             { label: 'Arsip', href: '#' },
             { label: 'Riset', href: '#' },
             { label: 'Kontak', href: '#' },
-          ].map((item) => (
-            <li key={item.label}>
-              <Link
-                href={item.href}
-                className="nav-link"
-                style={{ opacity: 0, fontFamily: "'DM Mono', monospace" }}
-              >
-                {item.label}
-              </Link>
-            </li>
-          ))}
+          ].map((item) => {
+            const isActive =
+              item.href === '/'
+                ? pathname === '/'
+                : pathname?.startsWith(item.href)
+
+            return (
+              <li key={item.label}>
+                <Link
+                  href={item.href}
+                  className={`nav-link ${isActive ? 'nav-active' : ''}`}
+                  style={{ opacity: 0, fontFamily: "'DM Mono', monospace" }}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       </nav>
 
