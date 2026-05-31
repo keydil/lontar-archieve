@@ -21,6 +21,7 @@ const collections = [
     title: 'Carita Parahyangan',
     sub: 'Aksara Sunda Kuno',
     date: 'Abad ke-16 M',
+    maintenance: true,
   },
   {
     id: 'ARF — 002',
@@ -400,25 +401,46 @@ export default function Home() {
               >
                 {item.date}
               </p>
-              <Link
-                href={idx === 0 ? '/viewer' : '/baca'}
-                className="gi-link"
-                style={{
-                  marginTop: '1.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  fontSize: '9px',
-                  letterSpacing: '0.2em',
-                  textTransform: 'uppercase',
-                  fontFamily: "'DM Mono', monospace",
-                  color: 'var(--warm)',
-                  textDecoration: 'none',
-                }}
-              >
-                <span className="cta-line" style={{ width: '20px', background: 'var(--warm)' }} />
-                {idx === 0 ? 'Buka Viewer 3D' : 'Baca Naskah'}
-              </Link>
+              {item.maintenance ? (
+                <span
+                  className="gi-link"
+                  style={{
+                    marginTop: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    fontSize: '9px',
+                    letterSpacing: '0.2em',
+                    textTransform: 'uppercase',
+                    fontFamily: "'DM Mono', monospace",
+                    color: 'rgba(140, 138, 133, 0.5)',
+                    cursor: 'not-allowed',
+                  }}
+                >
+                  <span className="cta-line" style={{ width: '20px', background: 'rgba(140, 138, 133, 0.5)' }} />
+                  Sedang Perawatan
+                </span>
+              ) : (
+                <Link
+                  href={idx === 0 ? '/viewer' : '/baca'}
+                  className="gi-link"
+                  style={{
+                    marginTop: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    fontSize: '9px',
+                    letterSpacing: '0.2em',
+                    textTransform: 'uppercase',
+                    fontFamily: "'DM Mono', monospace",
+                    color: 'var(--warm)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <span className="cta-line" style={{ width: '20px', background: 'var(--warm)' }} />
+                  {idx === 0 ? 'Buka Viewer 3D' : 'Baca Naskah'}
+                </Link>
+              )}
             </div>
           ))}
         </div>
