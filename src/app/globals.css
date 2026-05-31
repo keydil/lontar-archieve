@@ -740,8 +740,8 @@ body {
   .global-nav ul {
     gap: 1rem;
     width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
+    justify-content: space-between; /* Spreads items evenly to fill the width */
+    flex-wrap: nowrap; /* Prevent wrapping so they stay in one row */
   }
   .global-nav .nav-link {
     font-size: 8px; /* Slightly smaller text on mobile */
