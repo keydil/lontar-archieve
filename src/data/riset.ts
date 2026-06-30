@@ -39,7 +39,9 @@ export const teams: Team[] = [
       'Menjalankan akuisisi data 3D langsung di lokasi museum dan situs arkeologi menggunakan kamera DSLR dan perangkat lunak fotogrametri.',
     anggota: [
       { nama: 'Fadhil', peran: 'Operator Fotogrametri & Web Dev' },
-      { nama: 'Koordinator Museum', peran: 'Liaison & Akses Artefak' },
+      { nama: 'Ilham', peran: 'Dokumentasi & Pengambilan Data' },
+      { nama: 'Yudi', peran: 'Koordinasi Lapangan & Logistik' },
+      { nama: 'Safaraz', peran: 'Pengolahan Model & QA' },
     ],
   },
 ]
