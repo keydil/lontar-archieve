@@ -310,19 +310,35 @@ export default function Home() {
             paddingBottom: '1.5rem',
           }}
         >
-          <h2
-            className="col-title"
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 'clamp(40px, 6vw, 72px)',
-              fontWeight: 900,
-              letterSpacing: '-0.02em',
-              opacity: 0,
-              transform: 'translateX(-40px)',
-            }}
-          >
-            Koleksi
-          </h2>
+          <div>
+            <p
+              className="col-title"
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '9px',
+                letterSpacing: '0.3em',
+                textTransform: 'uppercase',
+                color: 'var(--warm)',
+                marginBottom: '0.75rem',
+                opacity: 0,
+              }}
+            >
+              — Arsip Koleksi
+            </p>
+            <h2
+              className="col-title"
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 'clamp(40px, 6vw, 72px)',
+                fontWeight: 900,
+                letterSpacing: '-0.02em',
+                opacity: 0,
+                transform: 'translateX(-40px)',
+              }}
+            >
+              Koleksi
+            </h2>
+          </div>
           <span
             className="col-meta"
             style={{
