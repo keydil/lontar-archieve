@@ -22,6 +22,7 @@ const collections = [
     title: 'Carita Parahyangan',
     sub: 'Aksara Sunda Kuno',
     date: 'Abad ke-16 M',
+    image: '/images/carita-parahyangan.jpg',
     maintenance: true,
   },
   {
@@ -29,12 +30,14 @@ const collections = [
     title: 'Sanghyang Siksa Kandang Karesian',
     sub: 'Naskah Prosa',
     date: '1518 M',
+    image: '/images/sanghyang-siksa.jpg',
   },
   {
     id: 'ARF — 003',
     title: 'Bujangga Manik',
     sub: 'Kidung Perjalanan',
     date: 'Abad ke-15/16 M',
+    image: '/images/bujangga-manik.jpg',
   },
 ]
 
@@ -310,35 +313,19 @@ export default function Home() {
             paddingBottom: '1.5rem',
           }}
         >
-          <div>
-            <p
-              className="col-title"
-              style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: '9px',
-                letterSpacing: '0.3em',
-                textTransform: 'uppercase',
-                color: 'var(--warm)',
-                marginBottom: '0.75rem',
-                opacity: 0,
-              }}
-            >
-              — Arsip Koleksi
-            </p>
-            <h2
-              className="col-title"
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 'clamp(40px, 6vw, 72px)',
-                fontWeight: 900,
-                letterSpacing: '-0.02em',
-                opacity: 0,
-                transform: 'translateX(-40px)',
-              }}
-            >
-              Koleksi
-            </h2>
-          </div>
+          <h2
+            className="col-title"
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 'clamp(40px, 6vw, 72px)',
+              fontWeight: 900,
+              letterSpacing: '-0.02em',
+              opacity: 0,
+              transform: 'translateX(-40px)',
+            }}
+          >
+            Koleksi
+          </h2>
           <span
             className="col-meta"
             style={{
@@ -367,105 +354,144 @@ export default function Home() {
               key={item.id}
               className={`grid-item ${item.maintenance ? 'maintenance-card' : ''}`}
               style={{
-                padding: '2.5rem 2rem',
                 borderRight: idx < collections.length - 1 ? '1px solid var(--border)' : 'none',
                 opacity: 0,
                 transform: 'translateY(30px)',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              <p
-                className="gi-text"
+              {/* IMAGE AREA — atas card */}
+              <div
                 style={{
-                  fontSize: '9px',
-                  letterSpacing: '0.2em',
-                  color: 'var(--warm)',
-                  marginBottom: '3rem',
-                  fontFamily: "'DM Mono', monospace",
-                  transition: 'color 0.3s',
+                  height: '200px',
+                  borderBottom: '1px solid var(--border)',
+                  background: 'linear-gradient(135deg, rgba(200,169,110,0.08), rgba(200,169,110,0.03))',
+                  overflow: 'hidden',
+                  position: 'relative',
                 }}
               >
-                {item.id}
-              </p>
-              <h3
-                className="gi-text"
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: '26px',
-                  fontWeight: 900,
-                  lineHeight: 1.15,
-                  marginBottom: '0.75rem',
-                  letterSpacing: '-0.01em',
-                  transition: 'color 0.3s',
-                }}
-              >
-                {item.title}
-              </h3>
-              <p
-                className="gi-text"
-                style={{
-                  fontSize: '9px',
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  color: 'var(--warm)',
-                  marginBottom: '0.5rem',
-                  fontFamily: "'DM Mono', monospace",
-                  transition: 'color 0.3s',
-                }}
-              >
-                {item.sub}
-              </p>
-              <p
-                className="gi-text"
-                style={{
-                  fontSize: '11px',
-                  color: 'var(--warm)',
-                  marginTop: '2rem',
-                  fontFamily: "'DM Mono', monospace",
-                  transition: 'color 0.3s',
-                }}
-              >
-                {item.date}
-              </p>
-              {item.maintenance ? (
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    opacity: 0.85,
+                    transition: 'transform 0.6s ease, opacity 0.3s ease',
+                  }}
+                  onError={(e) => {
+                    // Fallback: show placeholder if image not found
+                    const el = e.currentTarget as HTMLImageElement
+                    el.style.display = 'none'
+                    if (el.parentElement) {
+                      el.parentElement.style.background =
+                        'repeating-linear-gradient(45deg, rgba(200,169,110,0.06) 0px, rgba(200,169,110,0.06) 1px, transparent 1px, transparent 12px)'
+                    }
+                  }}
+                />
                 <span
-                  className="gi-link"
                   style={{
-                    marginTop: '1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    fontSize: '9px',
+                    position: 'absolute',
+                    top: '1rem',
+                    left: '1rem',
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '8px',
                     letterSpacing: '0.2em',
                     textTransform: 'uppercase',
-                    fontFamily: "'DM Mono', monospace",
-                    color: 'rgba(140, 138, 133, 0.5)',
-                    cursor: 'not-allowed',
-                  }}
-                >
-                  <span className="cta-line" style={{ width: '20px', background: 'rgba(140, 138, 133, 0.5)' }} />
-                  Sedang Perawatan
-                </span>
-              ) : (
-                <Link
-                  href={idx === 0 ? '/viewer' : '/baca'}
-                  className="gi-link"
-                  style={{
-                    marginTop: '1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    fontSize: '9px',
-                    letterSpacing: '0.2em',
-                    textTransform: 'uppercase',
-                    fontFamily: "'DM Mono', monospace",
                     color: 'var(--warm)',
-                    textDecoration: 'none',
+                    background: 'rgba(240,237,230,0.85)',
+                    padding: '0.2rem 0.5rem',
                   }}
                 >
-                  <span className="cta-line" style={{ width: '20px', background: 'var(--warm)' }} />
-                  {idx === 0 ? 'Buka Viewer 3D' : 'Baca Naskah'}
-                </Link>
-              )}
+                  {item.id}
+                </span>
+              </div>
+
+              {/* INFO AREA — bawah card */}
+              <div style={{ padding: '2rem 2rem 2.5rem' }}>
+                <h3
+                  className="gi-text"
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '22px',
+                    fontWeight: 900,
+                    lineHeight: 1.15,
+                    marginBottom: '0.5rem',
+                    letterSpacing: '-0.01em',
+                    transition: 'color 0.3s',
+                  }}
+                >
+                  {item.title}
+                </h3>
+                <p
+                  className="gi-text"
+                  style={{
+                    fontSize: '9px',
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: 'var(--warm)',
+                    marginBottom: '0.5rem',
+                    fontFamily: "'DM Mono', monospace",
+                    transition: 'color 0.3s',
+                  }}
+                >
+                  {item.sub}
+                </p>
+                <p
+                  className="gi-text"
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--warm)',
+                    marginTop: '1rem',
+                    fontFamily: "'DM Mono', monospace",
+                    transition: 'color 0.3s',
+                  }}
+                >
+                  {item.date}
+                </p>
+                {item.maintenance ? (
+                  <span
+                    className="gi-link"
+                    style={{
+                      marginTop: '1.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      fontSize: '9px',
+                      letterSpacing: '0.2em',
+                      textTransform: 'uppercase',
+                      fontFamily: "'DM Mono', monospace",
+                      color: 'rgba(140, 138, 133, 0.5)',
+                      cursor: 'not-allowed',
+                    }}
+                  >
+                    <span className="cta-line" style={{ width: '20px', background: 'rgba(140, 138, 133, 0.5)' }} />
+                    Sedang Perawatan
+                  </span>
+                ) : (
+                  <Link
+                    href={idx === 0 ? '/viewer' : '/baca'}
+                    className="gi-link"
+                    style={{
+                      marginTop: '1.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      fontSize: '9px',
+                      letterSpacing: '0.2em',
+                      textTransform: 'uppercase',
+                      fontFamily: "'DM Mono', monospace",
+                      color: 'var(--warm)',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <span className="cta-line" style={{ width: '20px', background: 'var(--warm)' }} />
+                    {idx === 0 ? 'Buka Viewer 3D' : 'Baca Naskah'}
+                  </Link>
+                )}
+              </div>
             </div>
           ))}
         </div>
