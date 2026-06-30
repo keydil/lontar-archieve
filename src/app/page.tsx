@@ -6,12 +6,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import useGSAPAnimations from '@/hooks/useGSAPAnimations'
 import { useMusic } from '@/components/MusicPlayer'
+import { artifacts } from '@/data/koleksi'
 
 // Dynamic imports to avoid SSR issues with Three.js
 const HeroScene = dynamic(() => import('@/components/HeroScene'), { ssr: false })
 const ArtifactScene = dynamic(() => import('@/components/ArtifactScene'), { ssr: false })
 const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false })
 const SplashScreen = dynamic(() => import('@/components/SplashScreen'), { ssr: false })
+
 
 const manifestoText =
   'Setiap goresan aksara di atas daun lontar adalah warisan yang tak ternilai — jendela menuju peradaban Nusantara yang agung, menunggu untuk dibaca kembali oleh generasi yang akan datang.'
@@ -324,7 +326,7 @@ export default function Home() {
               transform: 'translateX(-40px)',
             }}
           >
-            Koleksi
+            Arsip digital
           </h2>
           <span
             className="col-meta"
@@ -497,7 +499,185 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ARTIFACT */}
+      {/* KOLEKSI — 3D Artifacts */}
+      <section
+        id="koleksi-3d"
+        style={{
+          padding: '8rem 4rem',
+          borderBottom: '1px solid var(--border)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            marginBottom: '4rem',
+            borderBottom: '1px solid var(--border)',
+            paddingBottom: '1.5rem',
+          }}
+        >
+          <h2
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 'clamp(40px, 6vw, 72px)',
+              fontWeight: 900,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Koleksi
+          </h2>
+          <Link
+            href="/koleksi"
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '9px',
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: 'var(--warm)',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            Lihat Semua →
+          </Link>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            border: '1px solid var(--border)',
+          }}
+        >
+          {artifacts.map((artifact, idx) => (
+            <Link
+              key={artifact.slug}
+              href={`/koleksi/${artifact.slug}`}
+              style={{
+                textDecoration: 'none',
+                color: 'inherit',
+                borderRight: idx < artifacts.length - 1 ? '1px solid var(--border)' : 'none',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* 3D Preview area */}
+              <div
+                style={{
+                  height: '240px',
+                  background: 'var(--charcoal)',
+                  borderBottom: '1px solid var(--border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Subtle grid pattern background */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    backgroundImage:
+                      'linear-gradient(rgba(240,237,230,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(240,237,230,0.04) 1px, transparent 1px)',
+                    backgroundSize: '32px 32px',
+                  }}
+                />
+                <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                  <div
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: '28px',
+                      marginBottom: '0.5rem',
+                      opacity: 0.6,
+                    }}
+                  >
+                    ⬡
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: '8px',
+                      letterSpacing: '0.2em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(240,237,230,0.3)',
+                    }}
+                  >
+                    3D Model
+                  </div>
+                </div>
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '1rem',
+                    right: '1rem',
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '8px',
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(240,237,230,0.4)',
+                    background: 'rgba(240,237,230,0.05)',
+                    padding: '0.2rem 0.5rem',
+                    border: '1px solid rgba(240,237,230,0.1)',
+                  }}
+                >
+                  {artifact.type}
+                </span>
+              </div>
+
+              {/* Info area */}
+              <div style={{ padding: '1.75rem 2rem 2rem' }}>
+                <div
+                  style={{
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '8px',
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: 'var(--warm)',
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  {artifact.year} · {artifact.material}
+                </div>
+                <h3
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '22px',
+                    fontWeight: 900,
+                    lineHeight: 1.15,
+                    letterSpacing: '-0.01em',
+                    color: 'var(--charcoal)',
+                    marginBottom: '1rem',
+                  }}
+                >
+                  {artifact.name}
+                </h3>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '9px',
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: 'var(--charcoal)',
+                  }}
+                >
+                  <span style={{ width: '16px', height: '1px', background: 'var(--charcoal)', display: 'inline-block' }} />
+                  Buka Viewer 3D
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+
       <section
         id="artifact"
         style={{
