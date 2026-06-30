@@ -67,7 +67,7 @@ export const artifacts: Artifact[] = [
     ],
   },
   {
-    slug: 'daun-lontar-01',
+    slug: 'macan_lonceng',
     name: 'Naskah Lontar Sunda Kuno',
     year: 'Abad ke-14',
     type: 'Manuscript',

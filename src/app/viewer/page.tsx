@@ -1,178 +1,229 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
-import Link from 'next/link'
-import { useState, useEffect, useRef } from 'react'
-import gsap from 'gsap'
+import { useState, useEffect, useRef } from 'react';
 
-const LontarViewer = dynamic(() => import('@/components/LontarViewer'), { ssr: false })
-const ArtifactScene = dynamic(() => import('@/components/ArtifactScene'), { ssr: false })
-const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false })
+// Daftar model yang ada — tinggal tambah di sini
+const DEFAULT_ITEMS = [
+  'drajum-super',
+  'macan_lonceng',
+  'sepatu-koku',
+];
+
+function slugToTitle(slug: string) {
+  return slug.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export default function ViewerPage() {
-  const [showViewer, setShowViewer] = useState(false)
-  const heroRef = useRef<HTMLDivElement>(null)
-  const canvasWrapRef = useRef<HTMLDivElement>(null)
+  const [items, setItems] = useState<string[]>([]);
+  const [active, setActive] = useState<string | null>(null);
+  const [input, setInput] = useState('');
+  const [toast, setToast] = useState('');
+  const [loadError, setLoadError] = useState(false);
+  const mvRef = useRef<HTMLElement | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Entrance animation
+  // Load dari localStorage, fallback ke default
   useEffect(() => {
-    gsap.fromTo('.viewer-kicker', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', delay: 0.3 })
-    gsap.fromTo('.viewer-h1', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1.3, ease: 'power3.out', delay: 0.5 })
-    gsap.fromTo('.viewer-sub', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', delay: 0.8 })
-    gsap.fromTo('.viewer-cta', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', delay: 1.1 })
-    gsap.fromTo('.viewer-meta', { opacity: 0 }, { opacity: 1, duration: 1, delay: 1.3 })
-  }, [])
+    const stored = localStorage.getItem('rs_items_v2');
+    const parsed: string[] = stored ? JSON.parse(stored) : DEFAULT_ITEMS;
+    setItems(parsed);
+    if (parsed.length > 0) setActive(parsed[0]);
+  }, []);
 
-  const handleOpenViewer = () => {
-    // Animate hero out, show viewer
-    if (heroRef.current) {
-      gsap.to(heroRef.current, {
-        opacity: 0,
-        y: -30,
-        duration: 0.5,
-        ease: 'power2.in',
-        onComplete: () => setShowViewer(true),
-      })
-    } else {
-      setShowViewer(true)
-    }
+  // Inject model-viewer web component script sekali
+  useEffect(() => {
+    if (document.querySelector('script[data-mv]')) return;
+    const s = document.createElement('script');
+    s.type = 'module';
+    s.src = 'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
+    s.setAttribute('data-mv', '1');
+    document.head.appendChild(s);
+  }, []);
+
+  // Re-mount model-viewer setiap active berubah untuk reset error state
+  useEffect(() => {
+    setLoadError(false);
+  }, [active]);
+
+  function saveItems(newItems: string[]) {
+    setItems(newItems);
+    localStorage.setItem('rs_items_v2', JSON.stringify(newItems));
   }
 
-  const handleCloseViewer = () => {
-    setShowViewer(false)
-    setTimeout(() => {
-      gsap.fromTo(heroRef.current, { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' })
-    }, 50)
+  function showToast(msg: string) {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(''), 3000);
   }
+
+  function addItem() {
+    const val = input.trim().replace(/\.glb$/i, '');
+    if (!val) { showToast('Masukkan nama barang dulu.'); return; }
+    if (items.includes(val)) { showToast(`"${val}" sudah ada.`); return; }
+    const next = [...items, val];
+    saveItems(next);
+    setInput('');
+    setActive(val);
+  }
+
+  function removeItem(slug: string) {
+    const next = items.filter((i) => i !== slug);
+    saveItems(next);
+    if (active === slug) setActive(next[0] ?? null);
+  }
+
+  // Inject model-viewer via dangerouslySetInnerHTML karena custom element
+  const modelSrc = active ? `/models/${active}.glb` : '';
 
   return (
-    <div style={{ background: '#F0EDE6', minHeight: '100vh' }}>
-      <CustomCursor />
+    <div style={{ display: 'flex', height: '100vh', fontFamily: 'system-ui, sans-serif', background: '#0e0e11', color: '#f0f0f0', overflow: 'hidden' }}>
 
-      {/* NAV */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '1.25rem 3rem', borderBottom: showViewer ? '1px solid rgba(240,237,230,0.08)' : '1px solid rgba(17,17,16,0.1)',
-        background: showViewer ? '#111110' : '#F0EDE6',
-        transition: 'background 0.4s, border-color 0.4s',
-      }}>
-        <Link href="/" style={{
-          fontFamily: "'DM Mono',monospace", fontSize: '10px', letterSpacing: '0.25em',
-          textTransform: 'uppercase', color: showViewer ? '#F0EDE6' : '#111110', textDecoration: 'none',
-          display: 'flex', alignItems: 'center', gap: '0.75rem',
-        }}>
-          ← Arsip Lontar
-        </Link>
+      {/* ── Sidebar ── */}
+      <aside style={{ width: 260, borderRight: '0.5px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
 
-        {showViewer ? (
-          <button onClick={handleCloseViewer} style={{
-            background: 'none', border: '1px solid rgba(240,237,230,0.2)', color: 'rgba(240,237,230,0.6)',
-            cursor: 'pointer', padding: '6px 16px', fontSize: '8px', letterSpacing: '0.2em',
-            textTransform: 'uppercase', fontFamily: "'DM Mono',monospace",
-          }}>
-            ← Kembali ke 3D View
-          </button>
-        ) : (
-          <span style={{ fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8C8A85', fontFamily: "'DM Mono',monospace" }}>
-            Carita Parahyangan — Abad ke-16
-          </span>
-        )}
-      </nav>
+        {/* Add input */}
+        <div style={{ padding: 14, borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addItem()}
+              placeholder="nama_barang"
+              style={{
+                flex: 1, height: 34, padding: '0 10px',
+                background: '#222228', border: '0.5px solid rgba(255,255,255,0.1)',
+                borderRadius: 8, color: '#f0f0f0', fontSize: 13, outline: 'none', minWidth: 0,
+              }}
+            />
+            <button
+              onClick={addItem}
+              style={{
+                height: 34, padding: '0 12px',
+                background: '#f0f0f0', color: '#0e0e11',
+                border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              }}
+            >
+              + Tambah
+            </button>
+          </div>
+          <p style={{ fontSize: 11, color: '#555560', marginTop: 6 }}>Tanpa .glb · underscore atau dash OK</p>
+        </div>
 
-      {/* HERO — 3D LONTAR */}
-      {!showViewer && (
-        <div ref={heroRef} style={{ paddingTop: '60px' }}>
+        <p style={{ fontSize: 11, fontWeight: 600, color: '#555560', textTransform: 'uppercase', letterSpacing: '0.07em', padding: '10px 14px 6px' }}>
+          Katalog
+        </p>
 
-          {/* Full-height 3D hero */}
-          <div style={{ position: 'relative', height: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-
-            {/* 3D Canvas — full background */}
-            <div ref={canvasWrapRef} style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-              <ArtifactScene />
-            </div>
-
-            {/* Content overlay */}
-            <div style={{ position: 'relative', zIndex: 2, padding: '0 6rem', maxWidth: '680px' }}>
-              <p className="viewer-kicker" style={{
-                opacity: 0, fontSize: '9px', letterSpacing: '0.35em', textTransform: 'uppercase',
-                color: '#8C8A85', fontFamily: "'DM Mono',monospace", marginBottom: '1.75rem',
+        {/* Item list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px 10px' }}>
+          {items.length === 0 && (
+            <p style={{ fontSize: 13, color: '#555560', textAlign: 'center', marginTop: 24 }}>
+              Belum ada item.
+            </p>
+          )}
+          {items.map((slug) => (
+            <div
+              key={slug}
+              onClick={() => setActive(slug)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 10px', borderRadius: 8, cursor: 'pointer', marginBottom: 3,
+                background: active === slug ? '#222228' : 'transparent',
+                border: `0.5px solid ${active === slug ? 'rgba(255,255,255,0.18)' : 'transparent'}`,
+              }}
+            >
+              <div style={{
+                width: 36, height: 36, background: '#18181c', borderRadius: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
               }}>
-                ARF — 001 / Koleksi Digital
-              </p>
-              <h1 className="viewer-h1" style={{
-                opacity: 0, fontFamily: "'Playfair Display',serif",
-                fontSize: 'clamp(52px, 8vw, 96px)', fontWeight: 900,
-                lineHeight: 0.9, letterSpacing: '-0.03em', color: '#111110',
-                marginBottom: '2rem',
-              }}>
-                Carita<br /><em style={{ fontStyle: 'italic', fontWeight: 400 }}>Parahyangan</em>
-              </h1>
-              <p className="viewer-sub" style={{
-                opacity: 0, fontSize: '12px', lineHeight: 2, color: '#8C8A85',
-                fontFamily: "'DM Mono',monospace", fontWeight: 300, maxWidth: '420px',
-                marginBottom: '3rem',
-              }}>
-                Naskah Sunda kuno dari abad ke-16 yang mengisahkan asal-usul dan sejarah tanah Parahyangan. Ditulis dalam aksara Sunda Buhun di atas daun lontar.
-              </p>
-
+                📦
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {slugToTitle(slug)}
+                </div>
+                <div style={{ fontSize: 11, color: '#555560', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {slug}.glb
+                </div>
+              </div>
               <button
-                className="viewer-cta"
-                onClick={handleOpenViewer}
-                style={{
-                  opacity: 0, background: '#111110', border: 'none', color: '#F0EDE6',
-                  cursor: 'pointer', padding: '1rem 2.5rem',
-                  fontFamily: "'DM Mono',monospace", fontSize: '10px',
-                  letterSpacing: '0.25em', textTransform: 'uppercase',
-                  display: 'inline-flex', alignItems: 'center', gap: '1rem',
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#2A2A28')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#111110')}
+                onClick={(e) => { e.stopPropagation(); removeItem(slug); }}
+                style={{ background: 'none', border: 'none', color: '#555560', cursor: 'pointer', padding: 4, borderRadius: 6, fontSize: 14 }}
+                title="Hapus"
               >
-                Buka Naskah
-                <span style={{ display: 'inline-block', width: '30px', height: '1px', background: '#F0EDE6' }} />
+                🗑
               </button>
             </div>
-
-            {/* Bottom meta */}
-            <div className="viewer-meta" style={{
-              opacity: 0, position: 'absolute', bottom: '2.5rem', left: '6rem', right: '6rem',
-              zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-            }}>
-              <div style={{ display: 'flex', gap: '3rem' }}>
-                {[
-                  { label: 'Usia', value: 'Abad ke-16 M' },
-                  { label: 'Aksara', value: 'Sunda Buhun' },
-                  { label: 'Lembar', value: '3 tersedia' },
-                ].map(item => (
-                  <div key={item.label}>
-                    <span style={{ fontSize: '8px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8C8A85', fontFamily: "'DM Mono',monospace", display: 'block', marginBottom: '4px' }}>{item.label}</span>
-                    <span style={{ fontSize: '13px', fontFamily: "'Playfair Display',serif", fontWeight: 700 }}>{item.value}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: '8px', letterSpacing: '0.15em', color: '#8C8A85', fontFamily: "'DM Mono',monospace" }}>
-                  Putar objek 3D — gerak mouse
-                </p>
-              </div>
-            </div>
-
-            {/* Scroll indicator */}
-            <div style={{ position: 'absolute', bottom: '2.5rem', left: '50%', transform: 'translateX(-50%)', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '1px', height: '40px', background: '#111110', opacity: 0.2, animation: 'pulse 2s ease-in-out infinite' }} />
-            </div>
-          </div>
+          ))}
         </div>
-      )}
+      </aside>
 
-      {/* SCAN VIEWER */}
-      {showViewer && (
-        <div style={{ paddingTop: '60px' }}>
-          <LontarViewer />
+      {/* ── Main viewer ── */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#18181c' }}>
+
+        {active && (
+          <div style={{
+            padding: '10px 18px', borderBottom: '0.5px solid rgba(255,255,255,0.08)',
+            display: 'flex', alignItems: 'center', gap: 12, background: '#0e0e11',
+          }}>
+            <span style={{ fontSize: 15, fontWeight: 500 }}>{slugToTitle(active)}</span>
+            <span style={{ fontSize: 12, color: '#555560', fontFamily: 'monospace' }}>{active}.glb</span>
+            <span style={{
+              marginLeft: 'auto', fontSize: 11, padding: '3px 8px',
+              background: '#222228', border: '0.5px solid rgba(255,255,255,0.08)',
+              borderRadius: 6, color: '#9090a0',
+            }}>
+              RealityScan
+            </span>
+          </div>
+        )}
+
+        <div style={{ flex: 1, position: 'relative' }}>
+          {!active ? (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#555560' }}>
+              <span style={{ fontSize: 48 }}>📭</span>
+              <p style={{ fontSize: 14 }}>Pilih atau tambah item untuk preview</p>
+              <p style={{ fontSize: 12 }}>File .glb ada di <code style={{ fontFamily: 'monospace' }}>public/models/</code></p>
+            </div>
+          ) : loadError ? (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: '#e05555' }}>
+              <span style={{ fontSize: 40 }}>⚠️</span>
+              <p style={{ fontSize: 14 }}>File tidak ditemukan: <code style={{ fontFamily: 'monospace' }}>{active}.glb</code></p>
+              <p style={{ fontSize: 12, color: '#555560' }}>Pastikan file ada di <code style={{ fontFamily: 'monospace' }}>public/models/{active}.glb</code></p>
+            </div>
+          ) : (
+            // model-viewer sebagai custom element
+            <div
+              key={active}
+              style={{ width: '100%', height: '100%' }}
+              dangerouslySetInnerHTML={{
+                __html: `
+                  <model-viewer
+                    src="/models/${active}.glb"
+                    alt="${slugToTitle(active)}"
+                    auto-rotate
+                    camera-controls
+                    shadow-intensity="1"
+                    environment-image="neutral"
+                    exposure="1.1"
+                    style="width:100%;height:100%;background:#18181c;"
+                  ></model-viewer>
+                `,
+              }}
+            />
+          )}
+        </div>
+      </main>
+
+      {/* ── Toast ── */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+          background: '#222228', border: '0.5px solid rgba(255,255,255,0.1)',
+          color: '#e05555', padding: '8px 16px', borderRadius: 8, fontSize: 13, zIndex: 100,
+        }}>
+          {toast}
         </div>
       )}
     </div>
-  )
+  );
 }

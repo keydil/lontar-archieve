@@ -19,20 +19,32 @@ function Model({ slug, activeHotspot }: { slug: string; activeHotspot: string | 
     const center = box.getCenter(new THREE.Vector3())
     const size = box.getSize(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z)
-    const scale = 2.5 / maxDim
+    const scale = 1.5 / maxDim
 
     scene.position.sub(center)
     scene.scale.setScalar(scale)
 
-    // Apply nice materials defaults
+    // Apply materials + vertex colors
     scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh
         mesh.castShadow = true
         mesh.receiveShadow = true
+
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((mat) => {
+            const m = mat as THREE.MeshStandardMaterial
+            if (mesh.geometry.attributes.color) m.vertexColors = true
+            m.needsUpdate = true
+          })
+        } else {
+          const mat = mesh.material as THREE.MeshStandardMaterial
+          if (mesh.geometry.attributes.color) mat.vertexColors = true
+          mat.needsUpdate = true
+        }
       }
     })
-  }, [scene])
+  }, [scene]) // ← tutup useEffect di sini
 
   useFrame((_, delta) => {
     if (modelRef.current) {
@@ -40,7 +52,11 @@ function Model({ slug, activeHotspot }: { slug: string; activeHotspot: string | 
     }
   })
 
-  return <group ref={modelRef}><primitive object={scene} /></group>
+  return (
+    <group ref={modelRef} rotation={[-Math.PI / 2, 0, 0]}>
+      <primitive object={scene} />
+    </group>
+  )
 }
 
 // ============================================================
@@ -303,7 +319,7 @@ export default function ModelViewer({
       {loading && <LoadingScreen progress={progress} />}
       <DragHint />
       <Canvas
-        camera={{ position: [0, 1, 5], fov: 45 }}
+        camera={{ position: [0, 0, 6], fov: 50 }}
         shadows
         dpr={[1, 1.5]} // Capping Device Pixel Ratio saves massive amounts of GPU fill-rate on mobile
         gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}

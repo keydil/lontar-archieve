@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RealityScan Viewer</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0e11;
+      --surface: #18181c;
+      --surface2: #222228;
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.18);
+      --text: #f0f0f0;
+      --text-sec: #9090a0;
+      --text-hint: #555560;
+      --accent: #f0f0f0;
+      --accent-bg: #f0f0f0;
+      --accent-text: #0e0e11;
+      --danger: #e05555;
+      --radius: 10px;
+      --radius-lg: 14px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 20px 24px 16px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 {
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+    header span {
+      font-size: 12px;
+      color: var(--text-hint);
+      font-family: monospace;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      height: calc(100vh - 57px);
+    }
+
+    /* --- Sidebar --- */
+    .sidebar {
+      border-right: 0.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .add-area {
+      padding: 14px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .add-area .row {
+      display: flex;
+      gap: 8px;
+    }
+    .add-area input {
+      flex: 1;
+      height: 34px;
+      padding: 0 10px;
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      min-width: 0;
+    }
+    .add-area input::placeholder { color: var(--text-hint); }
+    .add-area input:focus { border-color: var(--border-hover); }
+    .add-area button {
+      height: 34px;
+      padding: 0 12px;
+      background: var(--accent-bg);
+      color: var(--accent-text);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .add-area button:hover { opacity: 0.88; }
+    .add-area button:active { transform: scale(0.97); }
+    .add-area .hint-text {
+      font-size: 11px;
+      color: var(--text-hint);
+      margin-top: 7px;
+    }
+
+    .catalog-header {
+      padding: 10px 14px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-hint);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .catalog {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 10px 10px;
+    }
+    .catalog::-webkit-scrollbar { width: 4px; }
+    .catalog::-webkit-scrollbar-track { background: transparent; }
+    .catalog::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .item-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      margin-bottom: 3px;
+      transition: background 0.12s;
+      border: 0.5px solid transparent;
+    }
+    .item-card:hover { background: var(--surface2); }
+    .item-card.active {
+      background: var(--surface2);
+      border-color: var(--border-hover);
+    }
+    .item-card .icon {
+      width: 36px;
+      height: 36px;
+      background: var(--surface);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--text-hint);
+      flex-shrink: 0;
+    }
+    .item-card.active .icon { color: var(--text-sec); }
+    .item-card .info { flex: 1; min-width: 0; }
+    .item-card .info .name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .item-card .info .slug {
+      font-size: 11px;
+      color: var(--text-hint);
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .del-btn {
+      background: none;
+      border: none;
+      color: var(--text-hint);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+    .item-card:hover .del-btn { opacity: 1; }
+    .del-btn:hover { color: var(--danger); background: rgba(224,85,85,0.12); }
+
+    .empty-sidebar {
+      padding: 24px 14px;
+      text-align: center;
+      color: var(--text-hint);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .empty-sidebar i { font-size: 28px; display: block; margin-bottom: 8px; }
+
+    /* --- Main viewer --- */
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .viewer-bar {
+      padding: 10px 18px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg);
+    }
+    .viewer-bar .title { font-size: 15px; font-weight: 500; }
+    .viewer-bar .meta { font-size: 12px; color: var(--text-hint); font-family: monospace; }
+    .viewer-bar .badge {
+      margin-left: auto;
+      font-size: 11px;
+      padding: 3px 8px;
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-sec);
+    }
+
+    model-viewer {
+      width: 100%;
+      flex: 1;
+      --poster-color: transparent;
+      background: var(--surface);
+    }
+
+    .empty-viewer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--text-hint);
+    }
+    .empty-viewer i { font-size: 48px; }
+    .empty-viewer p { font-size: 14px; }
+    .empty-viewer small { font-size: 12px; color: var(--text-hint); opacity: 0.6; }
+
+    .error-viewer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--danger);
+    }
+    .error-viewer i { font-size: 40px; }
+    .error-viewer p { font-size: 14px; }
+    .error-viewer small { font-size: 12px; color: var(--text-hint); }
+
+    .error-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      color: var(--danger);
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      display: none;
+      z-index: 100;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; }
+      .sidebar { border-right: none; border-bottom: 0.5px solid var(--border); max-height: 40vh; }
+      model-viewer { min-height: 320px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <i class="ti ti-box-model-2" style="font-size:22px; color: #9090a0;" aria-hidden="true"></i>
+  <h1>RealityScan Viewer</h1>
+  <span>.glb 3D Models</span>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="add-area">
+      <div class="row">
+        <input type="text" id="slug-input" placeholder="sepatu_macan" autocomplete="off" />
+        <button onclick="addItem()"><i class="ti ti-plus" aria-hidden="true"></i> Tambah</button>
+      </div>
+      <p class="hint-text">Tanpa .glb · underscore atau dash OK</p>
+    </div>
+
+    <div class="catalog-header">Katalog</div>
+
+    <div class="catalog" id="catalog">
+      <!-- items rendered here -->
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="main">
+    <div class="viewer-bar" id="viewer-bar" style="display:none;">
+      <span class="title" id="viewer-title"></span>
+      <span class="meta" id="viewer-meta"></span>
+      <span class="badge" id="viewer-badge">RealityScan</span>
+    </div>
+    <div id="viewer-body" style="flex:1; display:flex; flex-direction:column;">
+      <div class="empty-viewer">
+        <i class="ti ti-box-off" aria-hidden="true"></i>
+        <p>Pilih atau tambah item untuk preview</p>
+        <small>Semua file .glb harus satu folder dengan file HTML ini</small>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<div class="error-toast" id="error-toast"></div>
+
+<script>
+  const STORAGE_KEY = 'rs_items_v1';
+  let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  let activeSlug = null;
+
+  function slugToTitle(slug) {
+    return slug.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('error-toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.style.display = 'none', 3000);
+  }
+
+  function addItem() {
+    const input = document.getElementById('slug-input');
+    const val = input.value.trim().replace(/\.glb$/i, '');
+    if (!val) { showToast('Masukkan nama barang dulu.'); return; }
+    if (items.includes(val)) { showToast('"' + val + '" sudah ada.'); return; }
+    items.push(val);
+    save();
+    input.value = '';
+    render();
+    openViewer(val);
+  }
+
+  function removeItem(slug) {
+    items = items.filter(i => i !== slug);
+    if (activeSlug === slug) {
+      activeSlug = null;
+      document.getElementById('viewer-bar').style.display = 'none';
+      document.getElementById('viewer-body').innerHTML = `
+        <div class="empty-viewer">
+          <i class="ti ti-box-off" aria-hidden="true"></i>
+          <p>Pilih item dari katalog</p>
+        </div>`;
+    }
+    save();
+    render();
+  }
+
+  function openViewer(slug) {
+    activeSlug = slug;
+
+    document.getElementById('viewer-bar').style.display = 'flex';
+    document.getElementById('viewer-title').textContent = slugToTitle(slug);
+    document.getElementById('viewer-meta').textContent = slug + '.glb';
+
+    const body = document.getElementById('viewer-body');
+    body.innerHTML = '';
+
+    const mv = document.createElement('model-viewer');
+    mv.setAttribute('src', slug + '.glb');
+    mv.setAttribute('alt', slugToTitle(slug));
+    mv.setAttribute('auto-rotate', '');
+    mv.setAttribute('camera-controls', '');
+    mv.setAttribute('shadow-intensity', '1');
+    mv.setAttribute('environment-image', 'neutral');
+    mv.setAttribute('exposure', '1.1');
+    mv.setAttribute('loading', 'eager');
+    mv.style.cssText = 'width:100%; flex:1;';
+
+    mv.addEventListener('error', () => {
+      body.innerHTML = `
+        <div class="error-viewer">
+          <i class="ti ti-file-alert" aria-hidden="true"></i>
+          <p>File tidak ditemukan: <code>${slug}.glb</code></p>
+          <small>Pastikan file ada di folder yang sama dengan HTML ini</small>
+        </div>`;
+    });
+
+    body.appendChild(mv);
+    render();
+  }
+
+  function render() {
+    const cat = document.getElementById('catalog');
+    if (items.length === 0) {
+      cat.innerHTML = `<div class="empty-sidebar">
+        <i class="ti ti-inbox" aria-hidden="true"></i>
+        Belum ada item.<br>Tambah nama barang di atas.
+      </div>`;
+      return;
+    }
+    cat.innerHTML = items.map(slug => `
+      <div class="item-card ${slug === activeSlug ? 'active' : ''}" onclick="openViewer('${slug}')">
+        <div class="icon"><i class="ti ti-box" aria-hidden="true"></i></div>
+        <div class="info">
+          <div class="name">${slugToTitle(slug)}</div>
+          <div class="slug">${slug}.glb</div>
+        </div>
+        <button class="del-btn" onclick="event.stopPropagation(); removeItem('${slug}')" title="Hapus">
+          <i class="ti ti-trash" aria-hidden="true"></i>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('slug-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addItem();
+  });
+
+  render();
+
+  // Auto-open first item on load
+  if (items.length > 0) openViewer(items[0]);
+</script>
+</body>
+</html>

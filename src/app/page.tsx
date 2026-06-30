@@ -91,9 +91,9 @@ export default function Home() {
         <ul>
           {[
             { label: 'Koleksi', href: '/koleksi' },
-            { label: 'Arsip', href: '#' },
-            { label: 'Riset', href: '#' },
-            { label: 'Kontak', href: '#' },
+            { label: 'Arsip', href: '/arsip' },
+            { label: 'Riset', href: '/riset' },
+            { label: 'Kontak', href: '/kontak' },
           ].map((item) => {
             const isActive =
               item.href === '/'
