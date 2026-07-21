@@ -3,23 +3,17 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { arsipEntries } from '@/data/arsip'
-
-const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false })
+import { useCMS } from '@/lib/cms'
+import { NAV_ITEMS } from '@/lib/nav'
 
 export default function ArsipPage() {
   const pathname = usePathname()
-
-  const navItems = [
-    { label: 'Koleksi', href: '/koleksi' },
-    { label: 'Arsip', href: '/arsip' },
-    { label: 'Riset', href: '/riset' },
-    { label: 'Kontak', href: '/kontak' },
-  ]
+  const { data } = useCMS()
+  const arsipEntries = data.arsip
+  const navItems = NAV_ITEMS
 
   return (
     <>
-      <CustomCursor />
       {/* NAV */}
       <nav className="global-nav">
         <Link

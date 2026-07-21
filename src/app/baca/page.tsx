@@ -1,15 +1,22 @@
 'use client'
 
+import { useState } from 'react'
 import LontarReader from '@/components/LontarReader'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-
-const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false })
+import { useCMS } from '@/lib/cms'
 
 export default function BacaPage() {
+  const { data, hydrated } = useCMS()
+  // hanya naskah yang published (atau semua bila field tidak ada)
+  const naskahList = data.naskah.filter((n) => n.published !== false)
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  const active =
+    naskahList.find((n) => n.id === activeId) ?? naskahList[0] ?? null
+
   return (
     <>
-      <CustomCursor />
       {/* Nav */}
       <nav style={{
         position: 'sticky',
@@ -38,6 +45,30 @@ export default function BacaPage() {
         >
           ← Arsip Lontar
         </Link>
+
+        {/* Pemilih naskah (jika lebih dari satu) */}
+        {naskahList.length > 1 && (
+          <select
+            value={active?.id ?? ''}
+            onChange={(e) => setActiveId(e.target.value)}
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '10px',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--charcoal)',
+              background: 'var(--bone)',
+              border: '1px solid var(--border)',
+              padding: '0.4rem 0.6rem',
+              cursor: 'pointer',
+            }}
+          >
+            {naskahList.map((n) => (
+              <option key={n.id} value={n.id}>{n.title}</option>
+            ))}
+          </select>
+        )}
+
         <span style={{
           fontFamily: "'DM Mono', monospace",
           fontSize: '9px',
@@ -49,7 +80,18 @@ export default function BacaPage() {
         </span>
       </nav>
 
-      <LontarReader />
+      {!hydrated ? (
+        <div style={{ padding: '6rem 4rem', fontFamily: "'DM Mono', monospace", fontSize: '12px', color: 'var(--warm)' }}>
+          Memuat naskah…
+        </div>
+      ) : active ? (
+        <LontarReader key={active.id} naskah={active} />
+      ) : (
+        <div style={{ padding: '6rem 4rem', fontFamily: "'DM Mono', monospace", fontSize: '13px', color: 'var(--warm)' }}>
+          Belum ada naskah yang dipublikasikan.{' '}
+          <Link href="/admin" style={{ color: 'var(--charcoal)', textDecoration: 'underline' }}>Buka Panel Admin</Link>
+        </div>
+      )}
     </>
   )
 }

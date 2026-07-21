@@ -1,26 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { getArsipBySlug } from '@/data/arsip'
-
-const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false })
+import { getArsipBySlugCMS, type ArsipEntry } from '@/lib/cms'
+import { NAV_ITEMS } from '@/lib/nav'
 
 export default function ArsipDetailPage() {
   const params = useParams<{ slug: string }>()
   const pathname = usePathname()
-  const entry = getArsipBySlug(params.slug)
+  const [entry, setEntry] = useState<ArsipEntry | null | undefined>(undefined)
   const [lang, setLang] = useState<'id' | 'en'>('id')
 
-  const navItems = [
-    { label: 'Koleksi', href: '/koleksi' },
-    { label: 'Arsip', href: '/arsip' },
-    { label: 'Riset', href: '/riset' },
-    { label: 'Kontak', href: '/kontak' },
-  ]
+  useEffect(() => {
+    let active = true
+    getArsipBySlugCMS(params.slug).then((e) => {
+      if (active) setEntry(e ?? null)
+    })
+    return () => { active = false }
+  }, [params.slug])
+
+  const navItems = NAV_ITEMS
+
+  // masih memuat
+  if (entry === undefined) {
+    return (
+      <div style={{ padding: '10rem 4rem 4rem', fontFamily: "'DM Mono', monospace", fontSize: '13px', color: 'var(--warm)' }}>
+        Memuat…
+      </div>
+    )
+  }
 
   if (!entry) {
     return (
@@ -51,7 +62,6 @@ export default function ArsipDetailPage() {
 
   return (
     <>
-      <CustomCursor />
       {/* NAV */}
       <nav className="global-nav">
         <Link
@@ -153,7 +163,7 @@ export default function ArsipDetailPage() {
             </div>
             <div
               style={{
-                height: '200px',
+                minHeight: '200px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -162,9 +172,15 @@ export default function ArsipDetailPage() {
                 fontSize: '11px',
                 color: 'rgba(240, 237, 230, 0.25)',
                 marginBottom: '1.5rem',
+                overflow: 'hidden',
               }}
             >
-              [ foto naskah asli ]
+              {entry.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={entry.image} alt={entry.title} style={{ width: '100%', height: 'auto', display: 'block' }} />
+              ) : (
+                '[ foto naskah asli ]'
+              )}
             </div>
 
             <div

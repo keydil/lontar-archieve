@@ -17,6 +17,7 @@ export interface ArsipEntry {
   provenance: string
   condition: string
   relatedKoleksiSlug?: string
+  image?: string   // foto naskah asli (data URL / path) — opsional
 }
 
 export const arsipEntries: ArsipEntry[] = [

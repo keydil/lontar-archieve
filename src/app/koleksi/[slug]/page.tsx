@@ -5,12 +5,9 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import gsap from 'gsap'
-import { getArtifactBySlug } from '@/data/koleksi'
+import { getKoleksiBySlug } from '@/lib/cms'
 import type { Artifact } from '@/data/koleksi'
 
-const CustomCursor = dynamic(() => import('@/components/CustomCursor'), {
-  ssr: false,
-})
 const ModelViewer = dynamic(() => import('@/components/ModelViewer'), {
   ssr: false,
 })
@@ -23,8 +20,11 @@ export default function KoleksiDetailPage() {
   const [activeHotspot, setActiveHotspot] = useState<string | null>(null)
 
   useEffect(() => {
-    const found = getArtifactBySlug(slug)
-    if (found) setArtifact(found)
+    let active = true
+    getKoleksiBySlug(slug).then((found) => {
+      if (active && found) setArtifact(found)
+    })
+    return () => { active = false }
   }, [slug])
 
   // GSAP reveal for metadata panel
@@ -117,8 +117,6 @@ export default function KoleksiDetailPage() {
 
   return (
     <>
-      <CustomCursor />
-
       <div
         style={{
           display: 'grid',
@@ -140,7 +138,7 @@ export default function KoleksiDetailPage() {
           }}
         >
           <ModelViewer
-            slug={artifact.slug}
+            slug={artifact.modelSlug || artifact.slug}
             type={artifact.type}
             hotspots={artifact.hotspots}
             activeHotspot={activeHotspot}

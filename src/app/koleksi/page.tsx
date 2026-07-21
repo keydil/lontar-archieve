@@ -6,16 +6,18 @@ import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { artifacts } from '@/data/koleksi'
+import { useCMS } from '@/lib/cms'
+import { NAV_ITEMS } from '@/lib/nav'
 
 gsap.registerPlugin(ScrollTrigger)
 
-const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false })
 const CardPreview = dynamic(() => import('@/components/CardPreview'), { ssr: false })
 
 export default function KoleksiPage() {
   const headerRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
+  const { data } = useCMS()
+  const artifacts = data.koleksi
 
   useEffect(() => {
     // Header reveal
@@ -55,12 +57,10 @@ export default function KoleksiPage() {
     return () => {
       ScrollTrigger.getAll().forEach((t) => t.kill())
     }
-  }, [])
+  }, [artifacts.length])
 
   return (
     <>
-      <CustomCursor />
-
       {/* FIXED NAV — minimal */}
       <nav className="global-nav">
         <Link
@@ -77,12 +77,7 @@ export default function KoleksiPage() {
           Arsip Lontar
         </Link>
         <ul>
-          {[
-            { label: 'Koleksi', href: '/koleksi' },
-            { label: 'Arsip', href: '/arsip' },
-            { label: 'Riset', href: '/riset' },
-            { label: 'Kontak', href: '/kontak' },
-          ].map((item) => {
+          {NAV_ITEMS.map((item) => {
             const isActive =
               item.href === '/'
                 ? pathname === '/'

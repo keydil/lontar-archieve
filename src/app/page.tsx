@@ -6,12 +6,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import useGSAPAnimations from '@/hooks/useGSAPAnimations'
 import { useMusic } from '@/components/MusicPlayer'
-import { artifacts } from '@/data/koleksi'
+import { useCMS } from '@/lib/cms'
+import { NAV_ITEMS } from '@/lib/nav'
 
 // Dynamic imports to avoid SSR issues with Three.js
 const HeroScene = dynamic(() => import('@/components/HeroScene'), { ssr: false })
 const ArtifactScene = dynamic(() => import('@/components/ArtifactScene'), { ssr: false })
-const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false })
 const SplashScreen = dynamic(() => import('@/components/SplashScreen'), { ssr: false })
 
 
@@ -47,6 +47,8 @@ export default function Home() {
   const { hasSeenSplash, setHasSeenSplash } = useMusic()
   const [shouldLoadHeavy, setShouldLoadHeavy] = useState(false)
   const pathname = usePathname()
+  const { data } = useCMS()
+  const artifacts = data.koleksi
   useGSAPAnimations()
 
   // Lock scroll when splash is visible
@@ -76,7 +78,6 @@ export default function Home() {
   return (
     <>
       {!hasSeenSplash && <SplashScreen onEnter={() => setHasSeenSplash(true)} />}
-      <CustomCursor />
 
       {/* NAV */}
       <nav className="global-nav">
@@ -94,12 +95,7 @@ export default function Home() {
           Arsip Lontar
         </div>
         <ul>
-          {[
-            { label: 'Koleksi', href: '/koleksi' },
-            { label: 'Arsip', href: '/arsip' },
-            { label: 'Riset', href: '/riset' },
-            { label: 'Kontak', href: '/kontak' },
-          ].map((item) => {
+          {NAV_ITEMS.map((item) => {
             const isActive =
               item.href === '/'
                 ? pathname === '/'
@@ -326,7 +322,7 @@ export default function Home() {
               transform: 'translateX(-40px)',
             }}
           >
-            Arsip digital
+            Arsip
           </h2>
           <span
             className="col-meta"
@@ -811,11 +807,16 @@ export default function Home() {
           }}
         >
           <nav style={{ marginBottom: '3rem' }}>
-            {['Koleksi Digital', 'Program Riset', 'Kontribusi', 'Kontak'].map((item) => (
-              <a key={item} href="#" className="footer-link">
-                {item}
+            {[
+              { label: 'Koleksi Digital', href: '/koleksi' },
+              { label: 'Arsip Naskah', href: '/arsip' },
+              { label: 'Baca & Terjemah', href: '/baca' },
+              { label: 'Panel Admin', href: '/admin' },
+            ].map((item) => (
+              <Link key={item.label} href={item.href} className="footer-link">
+                {item.label}
                 <span>↗</span>
-              </a>
+              </Link>
             ))}
             <div style={{ borderTop: '1px solid var(--border)' }} />
           </nav>

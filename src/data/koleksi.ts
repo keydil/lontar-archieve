@@ -25,6 +25,8 @@ export interface Artifact {
   description_id: string
   description_en: string
   hotspots: Hotspot[]
+  modelSlug?: string   // nama file .glb bila beda dengan slug (di public/models/)
+  images?: string[]    // foto artefak (data URL / path) — opsional
 }
 
 export const artifacts: Artifact[] = [
