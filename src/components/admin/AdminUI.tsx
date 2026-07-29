@@ -1,23 +1,60 @@
 'use client'
 
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { forwardRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { aksaraSundaGroups } from '@/data/aksara-sunda'
 import { uploadImage } from '@/lib/cms'
+import { toast } from './Feedback'
 
 const mono = "'DM Mono', monospace"
 
-// ── Label + field wrapper ──
-export function Field({
-  label,
-  hint,
-  children,
+// ── Lock / Unlock icons — dipakai buat status "finalized" ──
+export function LockIcon({ size = 12, style }: { size?: number; style?: CSSProperties }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={style}>
+      <rect x="3.25" y="7.25" width="9.5" height="6.75" rx="1.3" />
+      <path d="M5.5 7.25V4.9a2.5 2.5 0 0 1 5 0v2.35" />
+    </svg>
+  )
+}
+
+export function UnlockIcon({ size = 12, style }: { size?: number; style?: CSSProperties }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={style}>
+      <rect x="3.25" y="7.25" width="9.5" height="6.75" rx="1.3" />
+      <path d="M5.5 7.25V4.9a2.5 2.5 0 0 1 4.85-.65" />
+    </svg>
+  )
+}
+
+// ── Skeleton — placeholder shimmer buat state loading, gantiin teks
+// "Memuat..." yang cuma numpang lewat & bikin layout kedip.
+export function Skeleton({
+  width = '100%',
+  height = '14px',
+  borderRadius = '4px',
+  style,
 }: {
+  width?: string | number
+  height?: string | number
+  borderRadius?: string
+  style?: CSSProperties
+}) {
+  return <div className="admin-skeleton" style={{ width, height, borderRadius, ...style }} />
+}
+
+// ── Label + field wrapper ──
+// `error` menang atas `hint`: dipakai buat validasi form gaya login —
+// teks merah tepat di bawah field yang bermasalah, bukan cuma toast
+// generik yang gak jelas field mana yang dimaksud.
+export const Field = forwardRef<HTMLLabelElement, {
   label: string
   hint?: string
+  error?: string
+  required?: boolean
   children: ReactNode
-}) {
+}>(function Field({ label, hint, error, required, children }, ref) {
   return (
-    <label style={{ display: 'block', marginBottom: '1.25rem' }}>
+    <label ref={ref} style={{ display: 'block', marginBottom: '1.25rem' }}>
       <span
         style={{
           display: 'block',
@@ -25,14 +62,32 @@ export function Field({
           fontSize: '11px',
           letterSpacing: '0.15em',
           textTransform: 'uppercase',
-          color: 'var(--warm)',
+          color: error ? '#a03434' : 'var(--warm)',
           marginBottom: '0.5rem',
         }}
       >
         {label}
+        {required && <span style={{ color: '#a03434' }}> *</span>}
       </span>
       {children}
-      {hint && (
+      {error ? (
+        <span
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.35rem',
+            fontFamily: mono,
+            fontSize: '12px',
+            fontWeight: 700,
+            color: '#a03434',
+            marginTop: '0.4rem',
+            lineHeight: 1.5,
+          }}
+        >
+          <span aria-hidden style={{ flexShrink: 0 }}>⚠</span>
+          {error}
+        </span>
+      ) : hint ? (
         <span
           style={{
             display: 'block',
@@ -46,10 +101,10 @@ export function Field({
         >
           {hint}
         </span>
-      )}
+      ) : null}
     </label>
   )
-}
+})
 
 const baseInput: CSSProperties = {
   width: '100%',
@@ -63,25 +118,38 @@ const baseInput: CSSProperties = {
   outline: 'none',
 }
 
-export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} style={{ ...baseInput, ...props.style }} />
+const invalidInput: CSSProperties = {
+  borderColor: '#a03434',
+  borderWidth: '2px',
+  background: 'rgba(160,52,52,0.045)',
 }
 
-export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <textarea
-      {...props}
-      style={{ ...baseInput, lineHeight: 1.7, resize: 'vertical', minHeight: '80px', ...props.style }}
-    />
-  )
-}
+export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }>(
+  function Input({ invalid, style, ...props }, ref) {
+    return <input ref={ref} {...props} style={{ ...baseInput, ...(invalid ? invalidInput : null), ...style }} />
+  }
+)
+
+export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }>(
+  function Textarea({ invalid, style, ...props }, ref) {
+    return (
+      <textarea
+        ref={ref}
+        {...props}
+        style={{ ...baseInput, lineHeight: 1.7, resize: 'vertical', minHeight: '80px', ...(invalid ? invalidInput : null), ...style }}
+      />
+    )
+  }
+)
 
 export function Select({
   children,
+  invalid,
+  style,
   ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement>) {
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
   return (
-    <select {...props} style={{ ...baseInput, cursor: 'pointer', ...props.style }}>
+    <select {...props} style={{ ...baseInput, cursor: 'pointer', ...(invalid ? invalidInput : null), ...style }}>
       {children}
     </select>
   )
@@ -277,7 +345,7 @@ export function ImageUpload({
                   const url = await uploadImage(file)
                   onChange(url)
                 } catch (err) {
-                  alert('Gagal mengunggah gambar: ' + (err as Error).message)
+                  toast('Gagal mengunggah gambar: ' + (err as Error).message, 'error')
                 } finally {
                   setBusy(false)
                 }
