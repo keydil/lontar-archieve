@@ -33,29 +33,29 @@ function WordTooltip({ word, onClose, position }: TooltipProps) {
       onClick={(e) => e.stopPropagation()}
       style={{
         position: 'fixed',
-        left: Math.min(position.x, window.innerWidth - 280),
+        left: Math.min(position.x, window.innerWidth - 300),
         top: position.y + 16,
         zIndex: 2000,
         background: 'var(--charcoal)',
         color: 'var(--bone)',
         padding: '1.25rem 1.5rem',
-        width: '260px',
+        width: '280px',
         boxShadow: '0 8px 40px rgba(0,0,0,0.25)',
       }}
     >
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
         <div>
-          <span style={{ fontSize: '22px', fontFamily: 'serif', display: 'block', marginBottom: '2px' }}>
+          <span style={{ fontSize: '24px', fontFamily: 'serif', display: 'block', marginBottom: '2px' }}>
             {word.aksara}
           </span>
-          <span style={{ fontSize: '13px', fontFamily: "'Playfair Display', serif", fontStyle: 'italic', color: 'rgba(240,237,230,0.7)' }}>
+          <span style={{ fontSize: '14px', fontFamily: "'Playfair Display', serif", fontStyle: 'italic', color: 'rgba(240,237,230,0.75)' }}>
             {word.latin}
           </span>
         </div>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', color: 'rgba(240,237,230,0.4)', cursor: 'pointer', fontSize: '16px', padding: 0, marginTop: '-2px' }}
+          style={{ background: 'none', border: 'none', color: 'rgba(240,237,230,0.5)', cursor: 'pointer', fontSize: '18px', padding: 0, marginTop: '-2px' }}
         >
           ×
         </button>
@@ -65,10 +65,10 @@ function WordTooltip({ word, onClose, position }: TooltipProps) {
       {word.kelas && (
         <span style={{
           display: 'inline-block',
-          fontSize: '8px',
-          letterSpacing: '0.15em',
+          fontSize: '10px',
+          letterSpacing: '0.12em',
           textTransform: 'uppercase',
-          padding: '2px 8px',
+          padding: '3px 8px',
           background: kelasColor[word.kelas] || '#555',
           marginBottom: '0.75rem',
           fontFamily: "'DM Mono', monospace",
@@ -81,7 +81,7 @@ function WordTooltip({ word, onClose, position }: TooltipProps) {
       <div style={{ height: '1px', background: 'rgba(240,237,230,0.15)', marginBottom: '0.75rem' }} />
 
       {/* Terjemah */}
-      <p style={{ fontSize: '14px', fontFamily: "'Playfair Display', serif", fontWeight: 700, lineHeight: 1.4 }}>
+      <p style={{ fontSize: '16px', fontFamily: "'Playfair Display', serif", fontWeight: 700, lineHeight: 1.4 }}>
         {word.terjemah}
       </p>
     </div>
@@ -103,7 +103,7 @@ function VersePanel({ verse, onClose }: VersePanelProps) {
       right: 0,
       top: 0,
       bottom: 0,
-      width: '420px',
+      width: '460px',
       background: 'var(--bone)',
       borderLeft: '1px solid var(--border)',
       zIndex: 1500,
@@ -120,8 +120,8 @@ function VersePanel({ verse, onClose }: VersePanelProps) {
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          fontSize: '10px',
-          letterSpacing: '0.2em',
+          fontSize: '12px',
+          letterSpacing: '0.15em',
           textTransform: 'uppercase',
           fontFamily: "'DM Mono', monospace",
           color: 'var(--warm)',
@@ -135,8 +135,8 @@ function VersePanel({ verse, onClose }: VersePanelProps) {
 
       {/* Verse number */}
       <span style={{
-        fontSize: '9px',
-        letterSpacing: '0.3em',
+        fontSize: '11px',
+        letterSpacing: '0.25em',
         textTransform: 'uppercase',
         color: 'var(--warm)',
         fontFamily: "'DM Mono', monospace",
@@ -155,20 +155,20 @@ function VersePanel({ verse, onClose }: VersePanelProps) {
         marginBottom: '1.5rem',
         textAlign: 'center',
       }}>
-        <p style={{ fontSize: '24px', fontFamily: 'serif', lineHeight: 1.8, letterSpacing: '0.1em' }}>
+        <p style={{ fontSize: '26px', fontFamily: 'serif', lineHeight: 1.8, letterSpacing: '0.1em' }}>
           {verse.words.map(w => w.aksara).join(' ')}
         </p>
-        <p style={{ fontSize: '12px', fontFamily: "'Playfair Display', serif", fontStyle: 'italic', color: 'var(--warm)', marginTop: '0.5rem' }}>
+        <p style={{ fontSize: '14px', fontFamily: "'Playfair Display', serif", fontStyle: 'italic', color: 'var(--warm)', marginTop: '0.5rem' }}>
           {verse.words.map(w => w.latin).join(' ')}
         </p>
       </div>
 
       {/* Terjemah ayat */}
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
-        <span style={{ fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '0.75rem' }}>
+        <span style={{ fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '0.75rem' }}>
           Terjemahan
         </span>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 700, lineHeight: 1.5 }}>
+        <p style={{ fontFamily: "'Playfair Display', serif", fontSize: '19px', fontWeight: 700, lineHeight: 1.5 }}>
           {verse.terjemahVerse}
         </p>
       </div>
@@ -176,10 +176,10 @@ function VersePanel({ verse, onClose }: VersePanelProps) {
       {/* Makna — only if exists */}
       {verse.makna && (
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
-          <span style={{ fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '0.75rem' }}>
+          <span style={{ fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '0.75rem' }}>
             Makna & Tafsir
           </span>
-          <p style={{ fontSize: '12px', lineHeight: 2.1, color: 'var(--charcoal)', fontFamily: "'DM Mono', monospace", fontWeight: 300 }}>
+          <p style={{ fontSize: '14px', lineHeight: 1.9, color: 'var(--charcoal)', fontFamily: "'DM Mono', monospace", fontWeight: 300 }}>
             {verse.makna}
           </p>
         </div>
@@ -188,10 +188,10 @@ function VersePanel({ verse, onClose }: VersePanelProps) {
       {/* Catatan */}
       {verse.catatan && (
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
-          <span style={{ fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '0.75rem' }}>
+          <span style={{ fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '0.75rem' }}>
             Catatan Filologi
           </span>
-          <p style={{ fontSize: '11px', lineHeight: 1.9, color: 'var(--warm)', fontFamily: "'DM Mono', monospace", fontStyle: 'italic' }}>
+          <p style={{ fontSize: '13px', lineHeight: 1.8, color: 'var(--warm)', fontFamily: "'DM Mono', monospace", fontStyle: 'italic' }}>
             {verse.catatan}
           </p>
         </div>
@@ -199,16 +199,16 @@ function VersePanel({ verse, onClose }: VersePanelProps) {
 
       {/* Word breakdown */}
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
-        <span style={{ fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '1rem' }}>
+        <span style={{ fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '1rem' }}>
           Terjemah Per Kata
         </span>
         {verse.words.map(word => (
           <div key={word.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0.6rem 0', borderBottom: '1px solid rgba(17,17,16,0.06)' }}>
             <div>
-              <span style={{ fontSize: '16px', fontFamily: 'serif', marginRight: '0.75rem' }}>{word.aksara}</span>
-              <span style={{ fontSize: '11px', fontFamily: "'Playfair Display', serif", fontStyle: 'italic', color: 'var(--warm)' }}>{word.latin}</span>
+              <span style={{ fontSize: '18px', fontFamily: 'serif', marginRight: '0.75rem' }}>{word.aksara}</span>
+              <span style={{ fontSize: '13px', fontFamily: "'Playfair Display', serif", fontStyle: 'italic', color: 'var(--warm)' }}>{word.latin}</span>
             </div>
-            <span style={{ fontSize: '11px', fontFamily: "'DM Mono', monospace", color: 'var(--charcoal)', textAlign: 'right', maxWidth: '140px' }}>
+            <span style={{ fontSize: '13px', fontFamily: "'DM Mono', monospace", color: 'var(--charcoal)', textAlign: 'right', maxWidth: '170px' }}>
               {word.terjemah}
             </span>
           </div>
@@ -260,7 +260,7 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
         alignItems: 'flex-end',
       }}>
         <div>
-          <span style={{ fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '0.75rem' }}>
+          <span style={{ fontSize: '11px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '0.75rem' }}>
             Baca & Terjemah — Interaktif
           </span>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1 }}>
@@ -268,11 +268,59 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
           </h2>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <p style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'var(--warm)', fontFamily: "'DM Mono', monospace', lineHeight: 2" }}>
+          <p style={{ fontSize: '12px', letterSpacing: '0.08em', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", lineHeight: 1.7 }}>
             {naskah.sumber}<br />{naskah.tahun}
           </p>
         </div>
       </div>
+
+      {/* Gambar & Sinopsis */}
+      {(naskah.coverImage || naskah.sinopsis) && (
+        <div style={{
+          padding: '4rem',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '2.5rem',
+          background: 'var(--bone)',
+        }}>
+          {naskah.coverImage && (
+            <div style={{
+              width: '100%',
+              maxWidth: '960px',
+              border: '6px solid var(--charcoal)',
+              background: 'var(--charcoal)',
+            }}>
+              <img 
+                src={naskah.coverImage} 
+                alt={naskah.title}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  maxHeight: '500px',
+                  objectFit: 'cover',
+                  display: 'block'
+                }}
+              />
+            </div>
+          )}
+          {naskah.sinopsis && (
+            <h3 style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 'clamp(24px, 4vw, 32px)',
+              fontWeight: 700,
+              color: 'var(--charcoal)',
+              textAlign: 'center',
+              maxWidth: '800px',
+              lineHeight: 1.4,
+              marginTop: '1rem',
+            }}>
+              {naskah.sinopsis}
+            </h3>
+          )}
+        </div>
+      )}
 
       {/* Instructions */}
       <div style={{
@@ -288,8 +336,8 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
           { icon: '③', text: 'Ayat dengan garis bawah memiliki tafsir' },
         ].map(item => (
           <div key={item.icon} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '14px', fontFamily: "'Playfair Display', serif", fontWeight: 900 }}>{item.icon}</span>
-            <span style={{ fontSize: '10px', letterSpacing: '0.05em', color: 'var(--warm)', fontFamily: "'DM Mono', monospace" }}>{item.text}</span>
+            <span style={{ fontSize: '15px', fontFamily: "'Playfair Display', serif", fontWeight: 900 }}>{item.icon}</span>
+            <span style={{ fontSize: '12px', letterSpacing: '0.04em', color: 'var(--warm)', fontFamily: "'DM Mono', monospace" }}>{item.text}</span>
           </div>
         ))}
       </div>
@@ -297,7 +345,7 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
       {/* Scan daun lontar asli */}
       {naskah.scanImages && naskah.scanImages.length > 0 && (
         <div style={{ padding: '2rem 4rem', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '1rem' }}>
+          <span style={{ fontSize: '11px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '1rem' }}>
             Foto Daun Lontar Asli
           </span>
           <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
@@ -315,7 +363,7 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
       )}
 
       {/* Verses */}
-      <div style={{ padding: '3rem 4rem', maxWidth: activeVerse ? 'calc(100% - 420px)' : '100%', transition: 'max-width 0.4s ease' }}>
+      <div style={{ padding: '3rem 4rem', maxWidth: activeVerse ? 'calc(100% - 460px)' : '100%', transition: 'max-width 0.4s ease' }}>
         {naskah.verses.map((verse) => (
           <div
             key={verse.id}
@@ -334,10 +382,10 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
             }}
           >
             {/* Verse number */}
-            <div style={{ width: '40px', flexShrink: 0, paddingTop: '4px' }}>
+            <div style={{ width: '48px', flexShrink: 0, paddingTop: '4px' }}>
               <span style={{
                 fontFamily: "'Playfair Display', serif",
-                fontSize: '13px',
+                fontSize: '15px',
                 color: 'var(--warm)',
                 fontStyle: 'italic',
               }}>
@@ -359,7 +407,7 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
                     onClick={(e) => handleWordClick(word, e)}
                     style={{
                       fontFamily: 'serif',
-                      fontSize: '28px',
+                      fontSize: '30px',
                       cursor: 'pointer',
                       padding: '2px 4px',
                       borderRadius: '2px',
@@ -392,7 +440,7 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
                     key={word.id + '-latin'}
                     style={{
                       fontFamily: "'Playfair Display', serif",
-                      fontSize: '13px',
+                      fontSize: '14px',
                       fontStyle: 'italic',
                       color: 'var(--warm)',
                     }}
@@ -404,10 +452,10 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
 
               {/* Terjemah */}
               <p style={{
-                fontSize: '14px',
+                fontSize: '16px',
                 fontFamily: "'DM Mono', monospace",
                 color: 'var(--charcoal)',
-                lineHeight: 1.8,
+                lineHeight: 1.75,
                 borderLeft: verse.makna ? '2px solid var(--charcoal)' : '2px solid transparent',
                 paddingLeft: verse.makna ? '1rem' : '0',
                 fontWeight: 300,
@@ -423,12 +471,12 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
                 right: '1rem',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                fontSize: '9px',
-                letterSpacing: '0.15em',
+                fontSize: '11px',
+                letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 color: 'var(--warm)',
                 fontFamily: "'DM Mono', monospace",
-                opacity: 0.6,
+                opacity: 0.7,
               }}>
                 {verse.makna ? 'Ada tafsir →' : 'Lihat detail →'}
               </div>

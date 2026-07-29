@@ -7,7 +7,7 @@
 :root {
   --bone: #F0EDE6;
   --charcoal: #111110;
-  --warm: #8C8A85;
+  --warm: #5E5B54;
   --border: rgba(17, 17, 16, 0.15);
 }
 
@@ -26,7 +26,7 @@ body {
   color: var(--charcoal);
   font-family: 'DM Mono', monospace;
   overflow-x: hidden;
-  cursor: none;
+  overflow-x: hidden;
 }
 
 /* Custom Cursor */
@@ -63,8 +63,8 @@ body {
 
 /* Nav */
 .nav-link {
-  font-size: 9px;
-  letter-spacing: 0.2em;
+  font-size: 11px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--charcoal);
   text-decoration: none;
@@ -148,7 +148,7 @@ body {
 .grid-item {
   position: relative;
   overflow: hidden;
-  cursor: none;
+  overflow: hidden;
 }
 
 .grid-item::before {
@@ -199,8 +199,8 @@ body {
   align-items: center;
   padding: 1rem 0;
   border-top: 1px solid var(--border);
-  font-size: 10px;
-  letter-spacing: 0.15em;
+  font-size: 12px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--warm);
   text-decoration: none;
@@ -258,7 +258,7 @@ body {
 .koleksi-card {
   position: relative;
   overflow: hidden;
-  cursor: none;
+  overflow: hidden;
 }
 
 .koleksi-card::before {
@@ -744,6 +744,6 @@ body {
     flex-wrap: nowrap; /* Prevent wrapping so they stay in one row */
   }
   .global-nav .nav-link {
-    font-size: 8px; /* Slightly smaller text on mobile */
+    font-size: 10px; /* Slightly smaller text on mobile */
   }
 }

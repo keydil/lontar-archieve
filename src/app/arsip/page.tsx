@@ -9,7 +9,7 @@ import { NAV_ITEMS } from '@/lib/nav'
 export default function ArsipPage() {
   const pathname = usePathname()
   const { data } = useCMS()
-  const arsipEntries = data.arsip
+  const naskahList = data.naskah.filter(n => n.published !== false)
   const navItems = NAV_ITEMS
 
   return (
@@ -20,8 +20,8 @@ export default function ArsipPage() {
           href="/"
           style={{
             fontFamily: "'DM Mono', monospace",
-            fontSize: '10px',
-            letterSpacing: '0.25em',
+            fontSize: '12px',
+            letterSpacing: '0.2em',
             textTransform: 'uppercase',
             color: 'var(--charcoal)',
             textDecoration: 'none',
@@ -57,8 +57,8 @@ export default function ArsipPage() {
         <p
           style={{
             fontFamily: "'DM Mono', monospace",
-            fontSize: '9px',
-            letterSpacing: '0.2em',
+            fontSize: '11px',
+            letterSpacing: '0.18em',
             textTransform: 'uppercase',
             color: 'var(--warm)',
             marginBottom: '1rem',
@@ -84,10 +84,10 @@ export default function ArsipPage() {
 
       {/* LIST */}
       <section style={{ padding: '0 4rem 6rem' }}>
-        {arsipEntries.map((entry) => (
+        {naskahList.map((entry) => (
           <Link
-            key={entry.slug}
-            href={`/arsip/${entry.slug}`}
+            key={entry.id}
+            href={`/arsip/${entry.id}`}
             style={{
               display: 'block',
               textDecoration: 'none',
@@ -103,14 +103,14 @@ export default function ArsipPage() {
                 <div
                   style={{
                     fontFamily: "'DM Mono', monospace",
-                    fontSize: '9px',
-                    letterSpacing: '0.1em',
+                    fontSize: '11px',
+                    letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                     color: 'var(--warm)',
                     marginBottom: '0.5rem',
                   }}
                 >
-                  {entry.script} · {entry.period}
+                  {entry.aksaraType || 'Naskah Kuno'} · {entry.tahun}
                 </div>
                 <div
                   style={{
@@ -125,20 +125,20 @@ export default function ArsipPage() {
                 <div
                   style={{
                     fontFamily: "'DM Mono', monospace",
-                    fontSize: '13px',
-                    lineHeight: 1.6,
+                    fontSize: '15px',
+                    lineHeight: 1.7,
                     color: 'var(--warm)',
                     maxWidth: '560px',
                   }}
                 >
-                  {entry.excerpt}
+                  {entry.sumber}
                 </div>
               </div>
               <div
                 style={{
                   fontFamily: "'DM Mono', monospace",
-                  fontSize: '11px',
-                  letterSpacing: '0.08em',
+                  fontSize: '13px',
+                  letterSpacing: '0.06em',
                   textTransform: 'uppercase',
                   color: 'var(--charcoal)',
                   marginLeft: '2rem',

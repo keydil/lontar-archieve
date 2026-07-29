@@ -58,7 +58,7 @@ export default function KoleksiEditor({
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 900 }}>
+        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 900 }}>
           {isNew ? 'Koleksi / Artefak Baru' : 'Edit Artefak'}
         </span>
         <div style={{ display: 'flex', gap: '0.6rem' }}>
@@ -116,13 +116,13 @@ export default function KoleksiEditor({
 
       {/* Hotspots */}
       <SectionTitle>Titik Anotasi (Hotspot)</SectionTitle>
-      <p style={{ fontFamily: mono, fontSize: '11px', color: 'var(--warm)', marginBottom: '1rem', lineHeight: 1.6 }}>
+      <p style={{ fontFamily: mono, fontSize: '13px', color: 'var(--warm)', marginBottom: '1rem', lineHeight: 1.6 }}>
         Titik interaktif pada model 3D. Posisi X/Y/Z menentukan letak titik pada model (biasanya antara -2 dan 2).
       </p>
       {item.hotspots.map((hs, idx) => (
         <Card key={hs.id} style={{ marginBottom: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontFamily: mono, fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--warm)' }}>
+            <span style={{ fontFamily: mono, fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--warm)' }}>
               Hotspot {idx + 1}
             </span>
             <Button variant="danger" onClick={() => patch({ hotspots: item.hotspots.filter((h) => h.id !== hs.id) })}>

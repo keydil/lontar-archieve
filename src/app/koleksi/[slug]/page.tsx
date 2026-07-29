@@ -85,7 +85,7 @@ export default function KoleksiDetailPage() {
         <p
           style={{
             fontFamily: "'Playfair Display', serif",
-            fontSize: '28px',
+            fontSize: '30px',
             fontWeight: 900,
             color: 'var(--charcoal)',
           }}
@@ -96,8 +96,8 @@ export default function KoleksiDetailPage() {
           href="/koleksi"
           style={{
             fontFamily: "'DM Mono', monospace",
-            fontSize: '9px',
-            letterSpacing: '0.2em',
+            fontSize: '11px',
+            letterSpacing: '0.18em',
             textTransform: 'uppercase',
             color: 'var(--warm)',
             textDecoration: 'none',
@@ -157,10 +157,10 @@ export default function KoleksiDetailPage() {
           >
             <span
               style={{
-                fontSize: '8px',
-                letterSpacing: '0.2em',
+                fontSize: '10px',
+                letterSpacing: '0.18em',
                 textTransform: 'uppercase',
-                color: 'rgba(17,17,16,0.25)',
+                color: 'rgba(17,17,16,0.35)',
                 fontFamily: "'DM Mono', monospace",
               }}
             >
@@ -191,8 +191,8 @@ export default function KoleksiDetailPage() {
               alignItems: 'center',
               gap: '0.75rem',
               fontFamily: "'DM Mono', monospace",
-              fontSize: '9px',
-              letterSpacing: '0.2em',
+              fontSize: '11px',
+              letterSpacing: '0.18em',
               textTransform: 'uppercase',
               color: 'var(--warm)',
               textDecoration: 'none',
@@ -241,8 +241,8 @@ export default function KoleksiDetailPage() {
             <span
               style={{
                 fontFamily: "'DM Mono', monospace",
-                fontSize: '11px',
-                letterSpacing: '0.08em',
+                fontSize: '13px',
+                letterSpacing: '0.06em',
                 color: 'var(--charcoal)',
               }}
             >
@@ -250,8 +250,8 @@ export default function KoleksiDetailPage() {
             </span>
             <span
               style={{
-                fontSize: '9px',
-                letterSpacing: '0.15em',
+                fontSize: '11px',
+                letterSpacing: '0.12em',
                 color: 'var(--warm)',
                 fontFamily: "'DM Mono', monospace",
               }}
@@ -260,8 +260,8 @@ export default function KoleksiDetailPage() {
             </span>
             <span
               style={{
-                fontSize: '9px',
-                letterSpacing: '0.15em',
+                fontSize: '11px',
+                letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 color: 'var(--warm)',
                 fontFamily: "'DM Mono', monospace",
@@ -292,14 +292,14 @@ export default function KoleksiDetailPage() {
                 onClick={() => setLangId(true)}
                 style={{
                   fontFamily: "'DM Mono', monospace",
-                  fontSize: '9px',
-                  letterSpacing: '0.2em',
+                  fontSize: '11px',
+                  letterSpacing: '0.18em',
                   textTransform: 'uppercase',
-                  padding: '0.4rem 0.8rem',
+                  padding: '0.45rem 0.85rem',
                   border: '1px solid var(--border)',
                   background: langId ? 'var(--charcoal)' : 'transparent',
                   color: langId ? 'var(--bone)' : 'var(--warm)',
-                  cursor: 'none',
+                  cursor: 'pointer',
                   transition: 'all 0.3s ease',
                 }}
               >
@@ -309,14 +309,14 @@ export default function KoleksiDetailPage() {
                 onClick={() => setLangId(false)}
                 style={{
                   fontFamily: "'DM Mono', monospace",
-                  fontSize: '9px',
-                  letterSpacing: '0.2em',
+                  fontSize: '11px',
+                  letterSpacing: '0.18em',
                   textTransform: 'uppercase',
-                  padding: '0.4rem 0.8rem',
+                  padding: '0.45rem 0.85rem',
                   border: '1px solid var(--border)',
                   background: !langId ? 'var(--charcoal)' : 'transparent',
                   color: !langId ? 'var(--bone)' : 'var(--warm)',
-                  cursor: 'none',
+                  cursor: 'pointer',
                   transition: 'all 0.3s ease',
                 }}
               >
@@ -327,10 +327,10 @@ export default function KoleksiDetailPage() {
             <p
               style={{
                 fontFamily: "'DM Mono', monospace",
-                fontSize: '12px',
-                lineHeight: 2.2,
+                fontSize: '15px',
+                lineHeight: 1.9,
                 color: 'var(--warm)',
-                maxWidth: '450px',
+                maxWidth: '480px',
               }}
             >
               {langId ? artifact.description_id : artifact.description_en}
@@ -367,8 +367,8 @@ export default function KoleksiDetailPage() {
                 <span
                   style={{
                     fontFamily: "'DM Mono', monospace",
-                    fontSize: '9px',
-                    letterSpacing: '0.2em',
+                    fontSize: '11px',
+                    letterSpacing: '0.16em',
                     textTransform: 'uppercase',
                     color: 'var(--warm)',
                   }}
@@ -378,7 +378,7 @@ export default function KoleksiDetailPage() {
                 <span
                   style={{
                     fontFamily: "'DM Mono', monospace",
-                    fontSize: '11px',
+                    fontSize: '13px',
                     color: 'var(--charcoal)',
                     textAlign: 'right',
                   }}
@@ -394,8 +394,8 @@ export default function KoleksiDetailPage() {
             <p
               style={{
                 fontFamily: "'DM Mono', monospace",
-                fontSize: '9px',
-                letterSpacing: '0.3em',
+                fontSize: '11px',
+                letterSpacing: '0.25em',
                 textTransform: 'uppercase',
                 color: 'var(--warm)',
                 marginBottom: '1rem',
@@ -422,9 +422,9 @@ export default function KoleksiDetailPage() {
                     color:
                       activeHotspot === hs.id ? 'var(--bone)' : 'var(--charcoal)',
                     fontFamily: "'DM Mono', monospace",
-                    fontSize: '10px',
-                    letterSpacing: '0.1em',
-                    cursor: 'none',
+                    fontSize: '12px',
+                    letterSpacing: '0.08em',
+                    cursor: 'pointer',
                     transition: 'all 0.3s ease',
                     textAlign: 'left',
                     opacity: 0,
@@ -460,7 +460,7 @@ export default function KoleksiDetailPage() {
               <p
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  fontSize: '18px',
+                  fontSize: '19px',
                   fontWeight: 700,
                   color: 'var(--charcoal)',
                   marginBottom: '0.75rem',
@@ -471,8 +471,8 @@ export default function KoleksiDetailPage() {
               <p
                 style={{
                   fontFamily: "'DM Mono', monospace",
-                  fontSize: '11px',
-                  lineHeight: 2,
+                  fontSize: '13px',
+                  lineHeight: 1.8,
                   color: 'var(--warm)',
                 }}
               >
@@ -496,8 +496,8 @@ export default function KoleksiDetailPage() {
           >
             <span
               style={{
-                fontSize: '8px',
-                letterSpacing: '0.1em',
+                fontSize: '10px',
+                letterSpacing: '0.08em',
                 color: 'var(--warm)',
                 fontFamily: "'DM Mono', monospace",
               }}
@@ -507,8 +507,8 @@ export default function KoleksiDetailPage() {
             <Link
               href="/koleksi"
               style={{
-                fontSize: '9px',
-                letterSpacing: '0.15em',
+                fontSize: '11px',
+                letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 color: 'var(--warm)',
                 fontFamily: "'DM Mono', monospace",

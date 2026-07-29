@@ -35,6 +35,7 @@ export function blankNaskah(): LontarNaskah {
     published: true,
     coverImage: undefined,
     scanImages: [],
+    sinopsis: '',
     verses: [emptyVerse(1)],
   }
 }
@@ -98,7 +99,7 @@ export default function NaskahEditor({
 
   function handleSave() {
     if (!naskah.title.trim()) {
-      alert('Judul naskah wajib diisi.')
+      alert('Judul arsip wajib diisi.')
       return
     }
     // pastikan id stabil & slug-friendly bila baru
@@ -127,8 +128,8 @@ export default function NaskahEditor({
           marginBottom: '1.5rem',
         }}
       >
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: 900 }}>
-          {initial.title ? 'Edit Naskah' : 'Naskah Baru'}
+        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 900 }}>
+          {initial.title ? 'Edit Arsip' : 'Arsip Baru'}
         </span>
         <div style={{ display: 'flex', gap: '0.6rem' }}>
           <Button variant="outline" onClick={onCancel}>
@@ -141,9 +142,9 @@ export default function NaskahEditor({
       </div>
 
       {/* Metadata */}
-      <SectionTitle>Metadata Naskah</SectionTitle>
+      <SectionTitle>Metadata Arsip</SectionTitle>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1.5rem' }}>
-        <Field label="Judul Naskah">
+        <Field label="Judul Arsip">
           <Input value={naskah.title} onChange={(e) => patch({ title: e.target.value })} placeholder="Carita Parahyangan" />
         </Field>
         <Field label="Jenis Aksara">
@@ -158,7 +159,7 @@ export default function NaskahEditor({
       </div>
 
       <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontFamily: mono, fontSize: '11px', color: 'var(--charcoal)', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontFamily: mono, fontSize: '13px', color: 'var(--charcoal)', cursor: 'pointer' }}>
           <input type="checkbox" checked={naskah.published ?? true} onChange={(e) => patch({ published: e.target.checked })} />
           Tampilkan di situs publik (jika tidak dicentang = draft)
         </label>
@@ -166,16 +167,20 @@ export default function NaskahEditor({
 
       <ImageUpload label="Gambar Sampul" value={naskah.coverImage} onChange={(url) => patch({ coverImage: url })} />
 
+      <Field label="Sinopsis" hint="Ringkasan singkat naskah — tampil di kartu beranda & halaman baca.">
+        <Textarea value={naskah.sinopsis ?? ''} onChange={(e) => patch({ sinopsis: e.target.value })} placeholder="Ringkasan singkat isi naskah…" style={{ minHeight: '90px' }} />
+      </Field>
+
       {/* Scan daun lontar */}
       <SectionTitle>Foto Scan Daun Lontar</SectionTitle>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
         {(naskah.scanImages ?? []).map((img, i) => (
           <div key={i} style={{ position: 'relative', width: '140px' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={img} alt={`scan ${i + 1}`} style={{ width: '140px', height: '180px', objectFit: 'cover', border: '1px solid var(--border)' }} />
+            <img src={img} alt={`scan ${i + 1}`} style={{ width: '140px', height: '180px', objectFit: 'cover', border: '1px solid var(--border)', borderRadius: '6px' }} />
             <button
               onClick={() => patch({ scanImages: (naskah.scanImages ?? []).filter((_, j) => j !== i) })}
-              style={{ position: 'absolute', top: 4, right: 4, background: 'var(--charcoal)', color: 'var(--bone)', border: 'none', width: 22, height: 22, cursor: 'pointer', fontSize: 12 }}
+              style={{ position: 'absolute', top: 4, right: 4, background: 'var(--charcoal)', color: 'var(--bone)', border: 'none', borderRadius: '50%', width: 22, height: 22, cursor: 'pointer', fontSize: 12 }}
             >
               ×
             </button>
@@ -194,9 +199,10 @@ export default function NaskahEditor({
         style={{
           background: 'rgba(200,169,110,0.06)',
           border: '1px solid var(--border)',
+          borderRadius: '8px',
           padding: '0.75rem 1rem',
           fontFamily: mono,
-          fontSize: '11px',
+          fontSize: '13px',
           color: 'var(--warm)',
           lineHeight: 1.7,
           marginBottom: '1rem',
@@ -211,7 +217,7 @@ export default function NaskahEditor({
       {naskah.verses.map((verse) => (
         <Card key={verse.id} style={{ marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 900 }}>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '19px', fontWeight: 900 }}>
               Ayat {verse.verseNumber}
             </span>
             <Button variant="danger" onClick={() => removeVerse(verse.id)}>
@@ -224,7 +230,7 @@ export default function NaskahEditor({
             <div style={{ minWidth: '620px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr 1.5fr 1fr 40px', gap: '0.5rem', marginBottom: '0.4rem' }}>
                 {['Aksara', 'Latin', 'Terjemah', 'Kelas', ''].map((h) => (
-                  <span key={h} style={{ fontFamily: mono, fontSize: '8px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--warm)' }}>
+                  <span key={h} style={{ fontFamily: mono, fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--warm)' }}>
                     {h}
                   </span>
                 ))}
@@ -237,7 +243,7 @@ export default function NaskahEditor({
                     onChange={(e) => updateWord(verse.id, word.id, { aksara: e.target.value })}
                     placeholder="ᮃᮓᮤ"
                     style={{
-                      fontSize: '20px',
+                      fontSize: '22px',
                       fontFamily: 'serif',
                       borderColor: focusedWord === word.id ? 'var(--charcoal)' : 'var(--border)',
                       borderWidth: focusedWord === word.id ? '2px' : '1px',
@@ -253,7 +259,7 @@ export default function NaskahEditor({
                   <button
                     onClick={() => removeWord(verse.id, word.id)}
                     title="Hapus kata"
-                    style={{ border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', height: '38px', color: '#a03434' }}
+                    style={{ border: '1px solid var(--border)', borderRadius: '6px', background: 'transparent', cursor: 'pointer', height: '38px', color: '#a03434' }}
                   >
                     ×
                   </button>
@@ -284,7 +290,7 @@ export default function NaskahEditor({
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
         <Button variant="outline" onClick={onCancel}>Batal</Button>
-        <Button variant="solid" onClick={handleSave}>✓ Simpan Naskah</Button>
+        <Button variant="solid" onClick={handleSave}>✓ Simpan Arsip</Button>
       </div>
     </div>
   )

@@ -113,8 +113,8 @@ export default function KoleksiPage() {
             alignItems: 'center',
             gap: '0.75rem',
             fontFamily: "'DM Mono', monospace",
-            fontSize: '9px',
-            letterSpacing: '0.2em',
+            fontSize: '11px',
+            letterSpacing: '0.18em',
             textTransform: 'uppercase',
             color: 'var(--warm)',
             textDecoration: 'none',
@@ -140,8 +140,8 @@ export default function KoleksiPage() {
             <p
               className="koleksi-kicker"
               style={{
-                fontSize: '9px',
-                letterSpacing: '0.3em',
+                fontSize: '11px',
+                letterSpacing: '0.25em',
                 textTransform: 'uppercase',
                 color: 'var(--warm)',
                 marginBottom: '1.5rem',
@@ -173,8 +173,8 @@ export default function KoleksiPage() {
           <span
             className="koleksi-meta"
             style={{
-              fontSize: '9px',
-              letterSpacing: '0.2em',
+              fontSize: '11px',
+              letterSpacing: '0.18em',
               textTransform: 'uppercase',
               color: 'var(--warm)',
               fontFamily: "'DM Mono', monospace",
@@ -241,8 +241,8 @@ export default function KoleksiPage() {
                 <span
                   className="koleksi-card-type"
                   style={{
-                    fontSize: '9px',
-                    letterSpacing: '0.2em',
+                    fontSize: '11px',
+                    letterSpacing: '0.18em',
                     textTransform: 'uppercase',
                     color: 'var(--warm)',
                     fontFamily: "'DM Mono', monospace",
@@ -252,8 +252,8 @@ export default function KoleksiPage() {
                 </span>
                 <span
                   style={{
-                    fontSize: '9px',
-                    letterSpacing: '0.15em',
+                    fontSize: '11px',
+                    letterSpacing: '0.12em',
                     color: 'var(--warm)',
                     fontFamily: "'DM Mono', monospace",
                   }}
@@ -266,7 +266,7 @@ export default function KoleksiPage() {
                 className="koleksi-card-name"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  fontSize: '24px',
+                  fontSize: '26px',
                   fontWeight: 900,
                   lineHeight: 1.15,
                   letterSpacing: '-0.01em',
@@ -286,8 +286,8 @@ export default function KoleksiPage() {
               >
                 <span
                   style={{
-                    fontSize: '9px',
-                    letterSpacing: '0.12em',
+                    fontSize: '11px',
+                    letterSpacing: '0.1em',
                     textTransform: 'uppercase',
                     color: 'var(--warm)',
                     fontFamily: "'DM Mono', monospace",
@@ -297,8 +297,8 @@ export default function KoleksiPage() {
                 </span>
                 <span
                   style={{
-                    fontSize: '9px',
-                    letterSpacing: '0.12em',
+                    fontSize: '11px',
+                    letterSpacing: '0.1em',
                     color: 'var(--warm)',
                     fontFamily: "'DM Mono', monospace",
                   }}
@@ -313,8 +313,8 @@ export default function KoleksiPage() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.75rem',
-                  fontSize: '9px',
-                  letterSpacing: '0.2em',
+                  fontSize: '11px',
+                  letterSpacing: '0.18em',
                   textTransform: 'uppercase',
                   fontFamily: "'DM Mono', monospace",
                   color: 'var(--warm)',
@@ -342,8 +342,8 @@ export default function KoleksiPage() {
       >
         <span
           style={{
-            fontSize: '9px',
-            letterSpacing: '0.1em',
+            fontSize: '11px',
+            letterSpacing: '0.08em',
             color: 'var(--warm)',
             fontFamily: "'DM Mono', monospace",
           }}
@@ -353,8 +353,8 @@ export default function KoleksiPage() {
         <Link
           href="/"
           style={{
-            fontSize: '9px',
-            letterSpacing: '0.15em',
+            fontSize: '11px',
+            letterSpacing: '0.12em',
             textTransform: 'uppercase',
             color: 'var(--warm)',
             fontFamily: "'DM Mono', monospace",

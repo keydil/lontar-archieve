@@ -22,8 +22,8 @@ export function Field({
         style={{
           display: 'block',
           fontFamily: mono,
-          fontSize: '9px',
-          letterSpacing: '0.2em',
+          fontSize: '11px',
+          letterSpacing: '0.15em',
           textTransform: 'uppercase',
           color: 'var(--warm)',
           marginBottom: '0.5rem',
@@ -37,10 +37,11 @@ export function Field({
           style={{
             display: 'block',
             fontFamily: mono,
-            fontSize: '10px',
+            fontSize: '12px',
             color: 'var(--warm)',
             marginTop: '0.35rem',
-            opacity: 0.8,
+            lineHeight: 1.5,
+            opacity: 0.9,
           }}
         >
           {hint}
@@ -53,11 +54,12 @@ export function Field({
 const baseInput: CSSProperties = {
   width: '100%',
   fontFamily: mono,
-  fontSize: '13px',
+  fontSize: '15px',
   color: 'var(--charcoal)',
   background: 'var(--bone)',
   border: '1px solid var(--border)',
-  padding: '0.7rem 0.85rem',
+  borderRadius: '6px',
+  padding: '0.75rem 0.9rem',
   outline: 'none',
 }
 
@@ -103,12 +105,13 @@ export function Button({
       {...props}
       style={{
         fontFamily: mono,
-        fontSize: '10px',
-        letterSpacing: '0.15em',
+        fontSize: '12px',
+        letterSpacing: '0.12em',
         textTransform: 'uppercase',
-        padding: '0.6rem 1.1rem',
+        padding: '0.65rem 1.2rem',
+        borderRadius: '6px',
         cursor: 'pointer',
-        transition: 'opacity 0.2s',
+        transition: 'opacity 0.2s, background 0.2s, border-color 0.2s',
         ...styles[variant],
         ...props.style,
       }}
@@ -123,6 +126,7 @@ export function Card({ children, style }: { children: ReactNode; style?: CSSProp
     <div
       style={{
         border: '1px solid var(--border)',
+        borderRadius: '10px',
         background: 'rgba(17,17,16,0.015)',
         padding: '1.25rem',
         ...style,
@@ -138,8 +142,8 @@ export function SectionTitle({ children }: { children: ReactNode }) {
     <p
       style={{
         fontFamily: mono,
-        fontSize: '9px',
-        letterSpacing: '0.3em',
+        fontSize: '11px',
+        letterSpacing: '0.25em',
         textTransform: 'uppercase',
         color: 'var(--warm)',
         marginBottom: '1rem',
@@ -166,6 +170,7 @@ export function AksaraKeyboard({ onInsert }: { onInsert: (char: string) => void 
           style={{
             marginTop: '0.75rem',
             border: '1px solid var(--border)',
+            borderRadius: '10px',
             padding: '1rem',
             background: 'var(--bone)',
             maxHeight: '340px',
@@ -177,14 +182,14 @@ export function AksaraKeyboard({ onInsert }: { onInsert: (char: string) => void 
               <div
                 style={{
                   fontFamily: mono,
-                  fontSize: '9px',
-                  letterSpacing: '0.15em',
+                  fontSize: '11px',
+                  letterSpacing: '0.12em',
                   textTransform: 'uppercase',
                   color: 'var(--warm)',
                   marginBottom: '0.5rem',
                 }}
               >
-                {group.label} — <span style={{ opacity: 0.7 }}>{group.hint}</span>
+                {group.label} — <span style={{ opacity: 0.85 }}>{group.hint}</span>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                 {group.chars.map((c, i) => (
@@ -197,6 +202,7 @@ export function AksaraKeyboard({ onInsert }: { onInsert: (char: string) => void 
                       minWidth: '44px',
                       padding: '0.4rem',
                       border: '1px solid var(--border)',
+                      borderRadius: '6px',
                       background: 'var(--bone)',
                       cursor: 'pointer',
                       display: 'flex',
@@ -205,8 +211,8 @@ export function AksaraKeyboard({ onInsert }: { onInsert: (char: string) => void 
                       gap: '2px',
                     }}
                   >
-                    <span style={{ fontSize: '22px', fontFamily: 'serif', lineHeight: 1 }}>{c.char}</span>
-                    <span style={{ fontFamily: mono, fontSize: '8px', color: 'var(--warm)' }}>{c.name}</span>
+                    <span style={{ fontSize: '24px', fontFamily: 'serif', lineHeight: 1 }}>{c.char}</span>
+                    <span style={{ fontFamily: mono, fontSize: '10px', color: 'var(--warm)' }}>{c.name}</span>
                   </button>
                 ))}
               </div>
@@ -240,6 +246,7 @@ export function ImageUpload({
             height: '120px',
             flexShrink: 0,
             border: '1px solid var(--border)',
+            borderRadius: '8px',
             background: 'var(--charcoal)',
             display: 'flex',
             alignItems: 'center',
@@ -251,7 +258,7 @@ export function ImageUpload({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={value} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <span style={{ fontFamily: mono, fontSize: '9px', color: 'rgba(240,237,230,0.4)' }}>
+            <span style={{ fontFamily: mono, fontSize: '11px', color: 'rgba(240,237,230,0.5)' }}>
               {busy ? 'Memproses…' : 'Kosong'}
             </span>
           )}
@@ -280,11 +287,12 @@ export function ImageUpload({
               style={{
                 display: 'inline-block',
                 fontFamily: mono,
-                fontSize: '10px',
-                letterSpacing: '0.15em',
+                fontSize: '12px',
+                letterSpacing: '0.12em',
                 textTransform: 'uppercase',
-                padding: '0.6rem 1.1rem',
+                padding: '0.65rem 1.2rem',
                 border: '1px solid var(--border)',
+                borderRadius: '6px',
                 cursor: 'pointer',
               }}
             >
