@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 
 // ─── Context ───
 interface MusicContextType {
@@ -89,6 +90,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 // ─── Floating Toggle Button (visible on all pages) ───
 export default function MusicToggle() {
   const { isMuted, isPlaying, toggleMute } = useMusic()
+  const pathname = usePathname()
+
+  // Panel admin adalah alat kerja, bukan bagian dari pengalaman situs —
+  // tombol ini menutupi link sidebar (Lihat Situs / Keluar) di sana.
+  if (pathname?.startsWith('/admin')) return null
 
   return (
     <button
