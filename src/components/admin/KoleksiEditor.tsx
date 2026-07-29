@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Artifact, Hotspot } from '@/data/koleksi'
 import { uid, slugify } from '@/lib/cms'
 import { Field, Input, Textarea, Button, Card, SectionTitle, ImageUpload } from './AdminUI'
+import QRCodeButton from './QRCodeButton'
+import { toast } from './Feedback'
 
 const mono = "'DM Mono', monospace"
 
@@ -36,22 +38,46 @@ export default function KoleksiEditor({
   isNew,
   onSave,
   onCancel,
+  onDirtyChange,
 }: {
   initial: KoleksiForm
   isNew: boolean
   onSave: (a: Artifact) => void
   onCancel: () => void
+  onDirtyChange?: (dirty: boolean) => void
 }) {
   const [item, setItem] = useState<KoleksiForm>(initial)
+  const [errors, setErrors] = useState<{ name?: string; slug?: string }>({})
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  const slugInputRef = useRef<HTMLInputElement>(null)
   const patch = (p: Partial<KoleksiForm>) => setItem((i) => ({ ...i, ...p }))
+
+  // Lapor ke parent kalau ada perubahan belum disimpan (dipakai buat
+  // nge-warn sebelum pindah tab/halaman).
+  const isDirty = JSON.stringify(item) !== JSON.stringify(initial)
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+    return () => onDirtyChange?.(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDirty])
 
   const updateHotspot = (id: string, p: Partial<Hotspot>) =>
     patch({ hotspots: item.hotspots.map((h) => (h.id === id ? { ...h, ...p } : h)) })
 
   function handleSave() {
-    if (!item.name.trim()) return alert('Nama artefak wajib diisi.')
+    const next: typeof errors = {}
+    if (!item.name.trim()) next.name = 'Wajib diisi — ini nama yang akan tampil di situs.'
     const slug = isNew ? slugify(item.slug || item.name) : item.slug
-    if (!slug) return alert('Slug tidak valid.')
+    if (!slug) next.slug = 'Slug tidak valid — pakai huruf, angka, dan tanda strip (-) saja.'
+    setErrors(next)
+
+    if (Object.keys(next).length > 0) {
+      toast('Masih ada yang perlu dilengkapi — lihat tanda merah di bawah.', 'error')
+      const target = next.name ? nameInputRef.current : slugInputRef.current
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      target?.focus()
+      return
+    }
     onSave({ ...item, slug })
   }
 
@@ -62,6 +88,13 @@ export default function KoleksiEditor({
           {isNew ? 'Koleksi / Artefak Baru' : 'Edit Artefak'}
         </span>
         <div style={{ display: 'flex', gap: '0.6rem' }}>
+          {!isNew && (
+            <QRCodeButton
+              url={typeof window !== 'undefined' ? `${window.location.origin}/koleksi/${item.slug}` : ''}
+              filename={item.slug}
+              label="QR Kode"
+            />
+          )}
           <Button variant="outline" onClick={onCancel}>Batal</Button>
           <Button variant="solid" onClick={handleSave}>✓ Simpan</Button>
         </div>
@@ -69,11 +102,34 @@ export default function KoleksiEditor({
 
       <SectionTitle>Informasi Artefak</SectionTitle>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1.5rem' }}>
-        <Field label="Nama Artefak">
-          <Input value={item.name} onChange={(e) => patch({ name: e.target.value })} placeholder="Naskah Lontar Sunda Kuno" />
+        <Field label="Nama Artefak" required error={errors.name}>
+          <Input
+            ref={nameInputRef}
+            value={item.name}
+            invalid={!!errors.name}
+            onChange={(e) => {
+              patch({ name: e.target.value })
+              if (errors.name) setErrors((er) => ({ ...er, name: undefined }))
+            }}
+            placeholder="Naskah Lontar Sunda Kuno"
+          />
         </Field>
-        <Field label="Slug (URL)" hint={isNew ? 'Kosongkan untuk otomatis dari nama.' : 'Tidak bisa diubah setelah dibuat.'}>
-          <Input value={item.slug} disabled={!isNew} onChange={(e) => patch({ slug: e.target.value })} placeholder="naskah-lontar-01" />
+        <Field
+          label="Slug (URL)"
+          hint={isNew ? 'Kosongkan untuk otomatis dari nama.' : 'Tidak bisa diubah setelah dibuat.'}
+          error={errors.slug}
+        >
+          <Input
+            ref={slugInputRef}
+            value={item.slug}
+            disabled={!isNew}
+            invalid={!!errors.slug}
+            onChange={(e) => {
+              patch({ slug: e.target.value })
+              if (errors.slug) setErrors((er) => ({ ...er, slug: undefined }))
+            }}
+            placeholder="naskah-lontar-01"
+          />
         </Field>
         <Field label="Tahun / Periode">
           <Input value={item.year} onChange={(e) => patch({ year: e.target.value })} placeholder="Abad ke-14" />
