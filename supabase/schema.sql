@@ -43,6 +43,15 @@ drop policy if exists "auth write koleksi" on public.koleksi;
 create policy "auth write naskah"  on public.naskah  for all to authenticated using (true) with check (true);
 create policy "auth write koleksi" on public.koleksi for all to authenticated using (true) with check (true);
 
+-- ── Grants — RLS policies ga cukup, role anon/authenticated juga perlu
+-- diberi hak akses tabel di level Postgres. Tabel yang dibuat lewat SQL
+-- Editor (bukan Table Editor UI) tidak otomatis dapat grant ini, makanya
+-- perlu ditulis eksplisit — tanpa ini muncul error "permission denied
+-- for table naskah/koleksi" meski RLS policy di atas sudah benar.
+grant usage on schema public to anon, authenticated;
+grant select on public.naskah, public.koleksi to anon, authenticated;
+grant insert, update, delete on public.naskah, public.koleksi to authenticated;
+
 -- ── Storage: bucket "media" untuk gambar ───────────────────
 insert into storage.buckets (id, name, public)
 values ('media', 'media', true)
