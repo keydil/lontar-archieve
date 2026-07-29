@@ -70,33 +70,6 @@ export default function useGSAPAnimations() {
       scrollTrigger: { trigger: '.grid-items', start: 'top 75%' },
     })
 
-    // Artifact section
-    gsap.to('.artifact-label', {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      ease: 'power3.out',
-      scrollTrigger: { trigger: '#artifact', start: 'top 70%' },
-    })
-
-    gsap.to('.artifact-h2', {
-      opacity: 1,
-      y: 0,
-      duration: 1.2,
-      ease: 'power3.out',
-      delay: 0.15,
-      scrollTrigger: { trigger: '#artifact', start: 'top 70%' },
-    })
-
-    gsap.to('.artifact-body', {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      ease: 'power3.out',
-      delay: 0.3,
-      scrollTrigger: { trigger: '#artifact', start: 'top 70%' },
-    })
-
     // Footer brand
     gsap.to('.footer-brand', {
       opacity: 1,
