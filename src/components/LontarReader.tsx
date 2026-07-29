@@ -230,6 +230,20 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
   const [activeVerse, setActiveVerse] = useState<LontarVerse | null>(null)
   const [hoveredVerse, setHoveredVerse] = useState<string | null>(null)
+  const [activeLembarIdx, setActiveLembarIdx] = useState(0)
+
+  const totalLembar = naskah.lembar.length
+  const currentLembar = naskah.lembar[Math.min(activeLembarIdx, totalLembar - 1)]
+  const goPrevLembar = () => {
+    setActiveVerse(null)
+    setActiveWord(null)
+    setActiveLembarIdx((i) => Math.max(0, i - 1))
+  }
+  const goNextLembar = () => {
+    setActiveVerse(null)
+    setActiveWord(null)
+    setActiveLembarIdx((i) => Math.min(totalLembar - 1, i + 1))
+  }
 
   const handleWordClick = useCallback((word: LontarWord, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -342,29 +356,71 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
         ))}
       </div>
 
-      {/* Scan daun lontar asli */}
-      {naskah.scanImages && naskah.scanImages.length > 0 && (
-        <div style={{ padding: '2rem 4rem', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '11px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'var(--warm)', fontFamily: "'DM Mono', monospace", display: 'block', marginBottom: '1rem' }}>
-            Foto Daun Lontar Asli
+      {/* Navigasi Lembar — biar kaya e-book, halaman per halaman */}
+      {totalLembar > 1 && (
+        <div style={{
+          padding: '1.25rem 4rem',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: '#E8E4DC',
+        }}>
+          <button
+            onClick={goPrevLembar}
+            disabled={activeLembarIdx === 0}
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: activeLembarIdx === 0 ? 'rgba(94,91,84,0.35)' : 'var(--charcoal)',
+              background: 'none',
+              border: 'none',
+              cursor: activeLembarIdx === 0 ? 'default' : 'pointer',
+              padding: 0,
+            }}
+          >
+            ← Halaman Sebelumnya
+          </button>
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--warm)' }}>
+            Lembar {activeLembarIdx + 1} / {totalLembar}
           </span>
-          <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-            {naskah.scanImages.map((img, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={i}
-                src={img}
-                alt={`Scan lembar ${i + 1}`}
-                style={{ height: '260px', width: 'auto', border: '1px solid var(--border)', flexShrink: 0, objectFit: 'contain', background: '#E8E4DC' }}
-              />
-            ))}
-          </div>
+          <button
+            onClick={goNextLembar}
+            disabled={activeLembarIdx === totalLembar - 1}
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: activeLembarIdx === totalLembar - 1 ? 'rgba(94,91,84,0.35)' : 'var(--charcoal)',
+              background: 'none',
+              border: 'none',
+              cursor: activeLembarIdx === totalLembar - 1 ? 'default' : 'pointer',
+              padding: 0,
+            }}
+          >
+            Halaman Berikutnya →
+          </button>
         </div>
       )}
 
-      {/* Verses */}
+      {/* Scan daun lontar asli — lembar aktif */}
+      {currentLembar.scanImage && (
+        <div style={{ padding: '2rem 4rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'center' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={currentLembar.scanImage}
+            alt={`Scan lembar ${currentLembar.lembarNumber}`}
+            style={{ maxHeight: '360px', width: 'auto', border: '1px solid var(--border)', objectFit: 'contain', background: '#E8E4DC' }}
+          />
+        </div>
+      )}
+
+      {/* Verses — lembar aktif */}
       <div style={{ padding: '3rem 4rem', maxWidth: activeVerse ? 'calc(100% - 460px)' : '100%', transition: 'max-width 0.4s ease' }}>
-        {naskah.verses.map((verse) => (
+        {currentLembar.verses.map((verse) => (
           <div
             key={verse.id}
             onMouseEnter={() => setHoveredVerse(verse.id)}
@@ -484,6 +540,55 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
           </div>
         ))}
       </div>
+
+      {/* Navigasi Lembar — bawah */}
+      {totalLembar > 1 && (
+        <div style={{
+          padding: '2rem 4rem 3rem',
+          borderTop: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <button
+            onClick={goPrevLembar}
+            disabled={activeLembarIdx === 0}
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: activeLembarIdx === 0 ? 'rgba(94,91,84,0.35)' : 'var(--charcoal)',
+              background: 'none',
+              border: 'none',
+              cursor: activeLembarIdx === 0 ? 'default' : 'pointer',
+              padding: 0,
+            }}
+          >
+            ← Halaman Sebelumnya
+          </button>
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--warm)' }}>
+            Lembar {activeLembarIdx + 1} / {totalLembar}
+          </span>
+          <button
+            onClick={goNextLembar}
+            disabled={activeLembarIdx === totalLembar - 1}
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: activeLembarIdx === totalLembar - 1 ? 'rgba(94,91,84,0.35)' : 'var(--charcoal)',
+              background: 'none',
+              border: 'none',
+              cursor: activeLembarIdx === totalLembar - 1 ? 'default' : 'pointer',
+              padding: 0,
+            }}
+          >
+            Halaman Berikutnya →
+          </button>
+        </div>
+      )}
 
       {/* Word Tooltip */}
       {activeWord && (
