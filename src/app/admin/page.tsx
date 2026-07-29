@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   useCMS,
   upsertNaskah,
@@ -15,14 +15,16 @@ import {
   type LontarNaskah,
 } from '@/lib/cms'
 import { supabase, supabaseConfigured } from '@/lib/supabase'
-import { Button } from '@/components/admin/AdminUI'
+import { Button, Skeleton } from '@/components/admin/AdminUI'
 import NaskahEditor, { blankNaskah } from '@/components/admin/NaskahEditor'
 import KoleksiEditor, { blankKoleksi } from '@/components/admin/KoleksiEditor'
+import { toast, confirmDialog, FeedbackHost } from '@/components/admin/Feedback'
 
 const mono = "'DM Mono', monospace"
 const serif = "'Playfair Display', serif"
 
 type Tab = 'dashboard' | 'naskah' | 'koleksi' | 'data'
+const TAB_IDS: Tab[] = ['dashboard', 'naskah', 'koleksi', 'data']
 type Editing =
   | { kind: 'naskah'; mode: 'new' | 'edit'; data: LontarNaskah }
   | { kind: 'koleksi'; mode: 'new' | 'edit'; data: Artifact }
@@ -103,8 +105,21 @@ function Gate() {
 // ============================================================
 function AdminApp() {
   const { data, hydrated } = useCMS()
-  const [tab, setTab] = useState<Tab>('dashboard')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const tabFromUrl = searchParams.get('tab')
+  const [tab, setTabState] = useState<Tab>(
+    TAB_IDS.includes(tabFromUrl as Tab) ? (tabFromUrl as Tab) : 'dashboard'
+  )
   const [editing, setEditing] = useState<Editing>(null)
+  const [isDirty, setIsDirty] = useState(false)
+
+  // Sinkron ke URL (?tab=...) — biar pindah tab kelihatan di address bar
+  // dan refresh ga balik ke Dashboard begitu aja.
+  function setTab(next: Tab) {
+    setTabState(next)
+    router.replace(next === 'dashboard' ? '/admin' : `/admin?tab=${next}`, { scroll: false })
+  }
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -113,19 +128,51 @@ function AdminApp() {
     { id: 'data', label: 'Data & Backup' },
   ]
 
+  // Ahli lagi ngedit (mis. Lembar 2 Ayat 3) tapi mau pindah halaman —
+  // jangan biarkan tulisannya sia-sia kebuang tanpa peringatan.
+  async function confirmLeaveIfDirty() {
+    if (!editing || !isDirty) return true
+    return confirmDialog(
+      'Ada perubahan yang belum disimpan. Kalau pindah sekarang, perubahan itu akan hilang.',
+      { danger: true, confirmLabel: 'Ya, Buang Perubahan' }
+    )
+  }
+
+  function closeEditor() {
+    setEditing(null)
+    setIsDirty(false)
+  }
+
+  // Guard navigasi browser (tutup tab / refresh / ketik URL baru) —
+  // native browser prompt, satu-satunya yang bisa dipakai di titik ini.
+  useEffect(() => {
+    if (!editing || !isDirty) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [editing, isDirty])
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bone)', cursor: 'auto' }}>
+    <div className="admin-shell" style={{ display: 'flex', minHeight: '100vh', background: 'var(--bone)', cursor: 'auto' }}>
+      <FeedbackHost />
       {/* Sidebar */}
-      <aside style={{ width: '240px', flexShrink: 0, borderRight: '1px solid var(--border)', padding: '2rem 1.25rem', position: 'sticky', top: 0, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ marginBottom: '2rem' }}>
+      <aside className="admin-sidebar" style={{ width: '240px', flexShrink: 0, borderRight: '1px solid var(--border)', padding: '2rem 1.25rem', position: 'sticky', top: 0, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="admin-sidebar-title" style={{ marginBottom: '2rem' }}>
           <p style={{ fontFamily: mono, fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'var(--warm)', marginBottom: '0.4rem' }}>Panel Admin</p>
           <p style={{ fontFamily: serif, fontSize: '22px', fontWeight: 900, lineHeight: 1 }}>Arsip Lontar</p>
         </div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }}>
+        <nav className="admin-sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }}>
           {tabs.map((t) => (
             <button
               key={t.id}
-              onClick={() => { setTab(t.id); setEditing(null) }}
+              onClick={async () => {
+                if (!(await confirmLeaveIfDirty())) return
+                setTab(t.id)
+                closeEditor()
+              }}
               style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 fontFamily: mono, fontSize: '13px', letterSpacing: '0.03em',
@@ -134,6 +181,7 @@ function AdminApp() {
                 borderRadius: '6px',
                 background: tab === t.id ? 'var(--charcoal)' : 'transparent',
                 color: tab === t.id ? 'var(--bone)' : 'var(--charcoal)',
+                whiteSpace: 'nowrap',
               }}
             >
               {t.label}
@@ -143,13 +191,22 @@ function AdminApp() {
             </button>
           ))}
         </nav>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
-          <Link href="/" style={{ fontFamily: mono, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--warm)', textDecoration: 'none' }}>
-            ← Lihat Situs
-          </Link>
+        <div className="admin-sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
           <button
-            onClick={() => supabase.auth.signOut()}
-            style={{ fontFamily: mono, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--warm)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+            onClick={async () => {
+              if (!(await confirmLeaveIfDirty())) return
+              router.push('/')
+            }}
+            style={{ fontFamily: mono, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--warm)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, whiteSpace: 'nowrap' }}
+          >
+            ← Lihat Situs
+          </button>
+          <button
+            onClick={async () => {
+              if (!(await confirmLeaveIfDirty())) return
+              supabase.auth.signOut()
+            }}
+            style={{ fontFamily: mono, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--warm)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, whiteSpace: 'nowrap' }}
           >
             Keluar ↩
           </button>
@@ -157,22 +214,40 @@ function AdminApp() {
       </aside>
 
       {/* Content */}
-      <main style={{ flex: 1, minWidth: 0, padding: '2.5rem 3rem' }}>
-        {!hydrated && <p style={{ fontFamily: mono, fontSize: '13px', color: 'var(--warm)' }}>Memuat data…</p>}
-
+      <main className="admin-main" style={{ flex: 1, minWidth: 0, padding: '2.5rem 3rem' }}>
+        {!hydrated && tab === 'data' && <DataTab />}
+        {!hydrated && tab !== 'data' && (
+          tab === 'naskah' || tab === 'koleksi' ? <ListViewSkeleton /> : <DashboardSkeleton />
+        )}
+        {hydrated && (
+        <>
         {editing?.kind === 'naskah' && (
           <NaskahEditor
             initial={editing.data}
-            onCancel={() => setEditing(null)}
-            onSave={async (n) => { try { await upsertNaskah(n); setEditing(null); setTab('naskah') } catch (e) { alert('Gagal menyimpan: ' + (e as Error).message) } }}
+            onDirtyChange={setIsDirty}
+            onCancel={async () => {
+              if (!(await confirmLeaveIfDirty())) return
+              closeEditor()
+            }}
+            onSave={async (n) => {
+              try { await upsertNaskah(n); closeEditor(); setTab('naskah'); toast('Arsip tersimpan.', 'success') }
+              catch (e) { toast('Gagal menyimpan: ' + (e as Error).message, 'error') }
+            }}
           />
         )}
         {editing?.kind === 'koleksi' && (
           <KoleksiEditor
             initial={editing.data}
             isNew={editing.mode === 'new'}
-            onCancel={() => setEditing(null)}
-            onSave={async (a) => { try { await upsertKoleksi(a); setEditing(null); setTab('koleksi') } catch (e) { alert('Gagal menyimpan: ' + (e as Error).message) } }}
+            onDirtyChange={setIsDirty}
+            onCancel={async () => {
+              if (!(await confirmLeaveIfDirty())) return
+              closeEditor()
+            }}
+            onSave={async (a) => {
+              try { await upsertKoleksi(a); closeEditor(); setTab('koleksi'); toast('Artefak tersimpan.', 'success') }
+              catch (e) { toast('Gagal menyimpan: ' + (e as Error).message, 'error') }
+            }}
           />
         )}
         {!editing && tab === 'dashboard' && <Dashboard data={data} onGo={setTab} />}
@@ -183,12 +258,12 @@ function AdminApp() {
             items={data.naskah.map((n) => ({
               key: n.id,
               primary: n.title || '(tanpa judul)',
-              secondary: `${n.aksaraType ?? ''} · ${n.verses.length} ayat${n.published === false ? ' · DRAFT' : ''}`,
+              secondary: `${n.aksaraType ?? ''} · ${n.lembar.length} lembar · ${n.lembar.reduce((sum, l) => sum + l.verses.length, 0)} ayat${n.finalized ? ' · TERKUNCI' : ''}${n.published === false ? ' · DRAFT' : ''}`,
               thumb: n.coverImage,
             }))}
             onNew={() => setEditing({ kind: 'naskah', mode: 'new', data: blankNaskah() })}
             onEdit={(key) => setEditing({ kind: 'naskah', mode: 'edit', data: data.naskah.find((n) => n.id === key)! })}
-            onDelete={async (key) => { try { await deleteNaskah(key) } catch (e) { alert('Gagal menghapus: ' + (e as Error).message) } }}
+            onDelete={async (key) => { try { await deleteNaskah(key); toast('Arsip dihapus.', 'success') } catch (e) { toast('Gagal menghapus: ' + (e as Error).message, 'error') } }}
           />
         )}
         {!editing && tab === 'koleksi' && (
@@ -203,10 +278,12 @@ function AdminApp() {
             }))}
             onNew={() => setEditing({ kind: 'koleksi', mode: 'new', data: blankKoleksi() })}
             onEdit={(key) => setEditing({ kind: 'koleksi', mode: 'edit', data: data.koleksi.find((k) => k.slug === key)! })}
-            onDelete={async (key) => { try { await deleteKoleksi(key) } catch (e) { alert('Gagal menghapus: ' + (e as Error).message) } }}
+            onDelete={async (key) => { try { await deleteKoleksi(key); toast('Artefak dihapus.', 'success') } catch (e) { toast('Gagal menghapus: ' + (e as Error).message, 'error') } }}
           />
         )}
         {!editing && tab === 'data' && <DataTab />}
+        </>
+        )}
       </main>
     </div>
   )
@@ -248,6 +325,33 @@ function Dashboard({ data, onGo }: { data: ReturnType<typeof useCMS>['data']; on
           {' '}untuk menyisipkan karakter Unicode. Lengkapi Latin, Terjemah, dan Kelas kata. Anda juga bisa mengunggah
           {' '}<b>foto scan</b> daun lontar asli sebagai pendamping.
         </p>
+      </div>
+    </div>
+  )
+}
+
+// Placeholder shimmer — bentuknya ngikutin layout Dashboard asli di atas,
+// biar pas data-nya kelar dimuat ga ada lompatan tata letak.
+function DashboardSkeleton() {
+  return (
+    <div>
+      <Skeleton width="140px" height="11px" style={{ marginBottom: '0.75rem' }} />
+      <Skeleton width="320px" height="40px" style={{ marginBottom: '0.75rem' }} />
+      <Skeleton width="90%" height="15px" style={{ marginBottom: '0.5rem', maxWidth: '620px' }} />
+      <Skeleton width="65%" height="15px" style={{ marginBottom: '2.5rem', maxWidth: '620px' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2.5rem' }}>
+        {[0, 1].map((i) => (
+          <div key={i} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '1.5rem' }}>
+            <Skeleton width="56px" height="44px" style={{ marginBottom: '0.75rem' }} />
+            <Skeleton width="90px" height="13px" style={{ marginBottom: '0.4rem' }} />
+            <Skeleton width="140px" height="12px" />
+          </div>
+        ))}
+      </div>
+      <div style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '1.5rem' }}>
+        <Skeleton width="160px" height="11px" style={{ marginBottom: '0.75rem' }} />
+        <Skeleton width="100%" height="14px" style={{ marginBottom: '0.5rem' }} />
+        <Skeleton width="80%" height="14px" />
       </div>
     </div>
   )
@@ -296,10 +400,43 @@ function ListView({
             <Button variant="outline" onClick={() => onEdit(it.key)}>Edit</Button>
             <Button
               variant="danger"
-              onClick={() => { if (confirm(`Hapus "${it.primary}"? Tindakan ini tidak bisa dibatalkan.`)) onDelete(it.key) }}
+              onClick={async () => {
+                const ok = await confirmDialog(`Hapus "${it.primary}"? Tindakan ini tidak bisa dibatalkan.`, { danger: true, confirmLabel: 'Hapus' })
+                if (ok) onDelete(it.key)
+              }}
             >
               Hapus
             </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Placeholder shimmer — ngikutin layout ListView asli (judul+tombol,
+// deskripsi, 3 baris item dengan thumb + 2 tombol).
+function ListViewSkeleton() {
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+        <Skeleton width="180px" height="36px" />
+        <Skeleton width="130px" height="40px" style={{ borderRadius: '6px' }} />
+      </div>
+      <Skeleton width="55%" height="14px" style={{ marginBottom: '2rem', maxWidth: '620px' }} />
+      <div style={{ border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden' }}>
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.25rem', borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}
+          >
+            <Skeleton width="52px" height="52px" style={{ borderRadius: '6px', flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Skeleton width="50%" height="18px" style={{ marginBottom: '6px' }} />
+              <Skeleton width="30%" height="12px" />
+            </div>
+            <Skeleton width="64px" height="34px" style={{ borderRadius: '6px', flexShrink: 0 }} />
+            <Skeleton width="64px" height="34px" style={{ borderRadius: '6px', flexShrink: 0 }} />
           </div>
         ))}
       </div>
