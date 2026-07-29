@@ -17,6 +17,56 @@
   box-sizing: border-box;
 }
 
+/* Skeleton — loading placeholder shimmer (AdminUI.tsx) */
+.admin-skeleton {
+  background: linear-gradient(90deg, rgba(17,17,16,0.06) 25%, rgba(17,17,16,0.12) 37%, rgba(17,17,16,0.06) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-skeleton { animation: none; background: rgba(17,17,16,0.09); }
+}
+
+/* Feedback — toast & confirm modal (src/components/admin/Feedback.tsx) */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes toast-in { from, to { opacity: 1; transform: none; } }
+  @keyframes overlay-in { from, to { opacity: 1; } }
+  @keyframes modal-in { from, to { opacity: 1; transform: none; } }
+}
+
+/* Wizard nav buttons (NaskahEditor) — subtle press feedback */
+.wizard-nav-btn {
+  transition: transform 0.15s ease, opacity 0.2s;
+}
+.wizard-nav-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wizard-nav-btn {
+    transition: none;
+  }
+  .wizard-nav-btn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -745,5 +795,62 @@ body {
   }
   .global-nav .nav-link {
     font-size: 10px; /* Slightly smaller text on mobile */
+  }
+}
+
+/* ============================================================ */
+/* ADMIN PANEL — responsive shell + wizard (NaskahEditor)        */
+/* ============================================================ */
+@media (max-width: 768px) {
+  .admin-shell {
+    flex-direction: column !important;
+  }
+  .admin-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+    padding: 1rem !important;
+    z-index: 30;
+  }
+  .admin-sidebar-title {
+    display: none !important;
+  }
+  .admin-sidebar-nav {
+    flex-direction: row !important;
+    flex: none !important;
+    overflow-x: auto;
+    gap: 0.5rem !important;
+  }
+  .admin-sidebar-footer {
+    flex-direction: row !important;
+    justify-content: space-between;
+    margin-top: 0.75rem !important;
+  }
+  .admin-main {
+    padding: 1.5rem 1.25rem !important;
+  }
+
+  /* Wizard (NaskahEditor) */
+  .wizard-topbar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+  .wizard-topbar-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .wizard-info-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .wizard-footer-nav {
+    flex-wrap: wrap;
+    gap: 0.75rem !important;
+  }
+  .wizard-review-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
   }
 }
