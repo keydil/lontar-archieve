@@ -17,7 +17,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
 Dashboard → **SQL Editor → New query** → tempel seluruh isi
 [`supabase/schema.sql`](./schema.sql) → **Run**.
 
-Ini membuat tabel `naskah`, `koleksi`, `arsip`, mengaktifkan RLS
+Ini membuat tabel `naskah` dan `koleksi`, mengaktifkan RLS
 (publik hanya bisa baca, admin login bisa tulis), dan bucket storage `media`.
 
 ## 3. Buat akun admin

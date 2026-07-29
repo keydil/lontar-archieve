@@ -4,6 +4,11 @@
 --   SQL Editor → New query → tempel → Run
 -- ============================================================
 
+-- Migrasi: tabel "arsip" (transkripsi teks terpisah) sudah tidak
+-- dipakai — "Arsip" sekarang ditampilkan langsung dari tabel naskah.
+-- Aman dijalankan meski tabelnya belum pernah dibuat.
+drop table if exists public.arsip cascade;
+
 -- ── Tabel ──────────────────────────────────────────────────
 create table if not exists public.naskah (
   id         text primary key,
@@ -22,34 +27,21 @@ create table if not exists public.koleksi (
   updated_at timestamptz default now()
 );
 
-create table if not exists public.arsip (
-  slug       text primary key,
-  title      text,
-  data       jsonb not null,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
 -- ── Row Level Security ─────────────────────────────────────
 alter table public.naskah  enable row level security;
 alter table public.koleksi enable row level security;
-alter table public.arsip   enable row level security;
 
 -- Publik boleh MEMBACA (halaman situs)
 drop policy if exists "public read naskah"  on public.naskah;
 drop policy if exists "public read koleksi" on public.koleksi;
-drop policy if exists "public read arsip"   on public.arsip;
 create policy "public read naskah"  on public.naskah  for select using (true);
 create policy "public read koleksi" on public.koleksi for select using (true);
-create policy "public read arsip"   on public.arsip   for select using (true);
 
 -- Hanya user login (admin) yang boleh MENULIS
 drop policy if exists "auth write naskah"  on public.naskah;
 drop policy if exists "auth write koleksi" on public.koleksi;
-drop policy if exists "auth write arsip"   on public.arsip;
 create policy "auth write naskah"  on public.naskah  for all to authenticated using (true) with check (true);
 create policy "auth write koleksi" on public.koleksi for all to authenticated using (true) with check (true);
-create policy "auth write arsip"   on public.arsip   for all to authenticated using (true) with check (true);
 
 -- ── Storage: bucket "media" untuk gambar ───────────────────
 insert into storage.buckets (id, name, public)

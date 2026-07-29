@@ -15,23 +15,19 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase, supabaseConfigured, MEDIA_BUCKET } from './supabase'
 import { artifacts as koleksiSeed } from '@/data/koleksi'
 import type { Artifact } from '@/data/koleksi'
-import { arsipEntries as arsipSeed } from '@/data/arsip'
-import type { ArsipEntry } from '@/data/arsip'
 import { naskahSeed } from '@/data/naskah'
 import type { LontarNaskah } from '@/data/naskah'
 
-export type { Artifact, ArsipEntry, LontarNaskah }
+export type { Artifact, LontarNaskah }
 
 export interface CMSData {
   koleksi: Artifact[]
-  arsip: ArsipEntry[]
   naskah: LontarNaskah[]
 }
 
 // Nama tabel di Supabase
 const T_NASKAH = 'naskah'
 const T_KOLEKSI = 'koleksi'
-const T_ARSIP = 'arsip'
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x))
@@ -40,7 +36,6 @@ function clone<T>(x: T): T {
 export function seedData(): CMSData {
   return {
     koleksi: clone(koleksiSeed),
-    arsip: clone(arsipSeed),
     naskah: clone(naskahSeed),
   }
 }
@@ -57,10 +52,9 @@ function emit() {
 export async function fetchAll(): Promise<CMSData> {
   if (!supabaseConfigured) return seedData()
 
-  const [n, k, a] = await Promise.all([
+  const [n, k] = await Promise.all([
     supabase.from(T_NASKAH).select('data').order('created_at', { ascending: true }),
     supabase.from(T_KOLEKSI).select('data').order('created_at', { ascending: true }),
-    supabase.from(T_ARSIP).select('data').order('created_at', { ascending: true }),
   ])
 
   const seed = seedData()
@@ -68,13 +62,11 @@ export async function fetchAll(): Promise<CMSData> {
   // Bila query error (mis. tabel belum dibuat), fallback ke seed.
   const naskah = n.error ? seed.naskah : (n.data ?? []).map((r) => r.data as LontarNaskah)
   const koleksi = k.error ? seed.koleksi : (k.data ?? []).map((r) => r.data as Artifact)
-  const arsip = a.error ? seed.arsip : (a.data ?? []).map((r) => r.data as ArsipEntry)
 
   // Fallback per-tabel bila kosong (belum di-seed) supaya situs tak blank.
   return {
     naskah: naskah.length ? naskah : seed.naskah,
     koleksi: koleksi.length ? koleksi : seed.koleksi,
-    arsip: arsip.length ? arsip : seed.arsip,
   }
 }
 
@@ -154,36 +146,12 @@ export async function deleteKoleksi(slug: string) {
   emit()
 }
 
-// -- Arsip (PK: slug) --
-export async function upsertArsip(item: ArsipEntry) {
-  await requireConfigured()
-  const { error } = await supabase.from(T_ARSIP).upsert({
-    slug: item.slug,
-    title: item.title,
-    data: item,
-  })
-  if (error) throw error
-  emit()
-}
-export async function deleteArsip(slug: string) {
-  await requireConfigured()
-  const { error } = await supabase.from(T_ARSIP).delete().eq('slug', slug)
-  if (error) throw error
-  emit()
-}
-
 // ── getter async untuk halaman detail berbasis slug/id ──
 export async function getKoleksiBySlug(slug: string): Promise<Artifact | undefined> {
   if (!supabaseConfigured) return seedData().koleksi.find((k) => k.slug === slug)
   const { data, error } = await supabase.from(T_KOLEKSI).select('data').eq('slug', slug).maybeSingle()
   if (error || !data) return seedData().koleksi.find((k) => k.slug === slug)
   return data.data as Artifact
-}
-export async function getArsipBySlugCMS(slug: string): Promise<ArsipEntry | undefined> {
-  if (!supabaseConfigured) return seedData().arsip.find((a) => a.slug === slug)
-  const { data, error } = await supabase.from(T_ARSIP).select('data').eq('slug', slug).maybeSingle()
-  if (error || !data) return seedData().arsip.find((a) => a.slug === slug)
-  return data.data as ArsipEntry
 }
 
 // ============================================================
@@ -201,10 +169,6 @@ export async function seedIntoDatabase() {
     const { error } = await supabase.from(T_KOLEKSI).upsert({ slug: k.slug, name: k.name, data: k })
     if (error) errs.push(error.message)
   }
-  for (const a of seed.arsip) {
-    const { error } = await supabase.from(T_ARSIP).upsert({ slug: a.slug, title: a.title, data: a })
-    if (error) errs.push(error.message)
-  }
   emit()
   if (errs.length) throw new Error(errs.join('; '))
 }
@@ -218,7 +182,6 @@ export async function importJSON(json: string): Promise<{ ok: boolean; error?: s
     const parsed = JSON.parse(json) as Partial<CMSData>
     for (const n of parsed.naskah ?? []) await upsertNaskah(n)
     for (const k of parsed.koleksi ?? []) await upsertKoleksi(k)
-    for (const a of parsed.arsip ?? []) await upsertArsip(a)
     emit()
     return { ok: true }
   } catch (e) {

@@ -35,6 +35,7 @@ export interface LontarNaskah {
   aksaraType?: string     // mis. "Aksara Sunda Kuno"
   coverImage?: string     // gambar sampul (data URL / path)
   scanImages?: string[]   // foto scan daun lontar (data URL / path)
+  sinopsis?: string       // deskripsi singkat naskah
   published?: boolean     // tampil di publik atau masih draft
   verses: LontarVerse[]
 }
@@ -52,6 +53,7 @@ export const naskahSeed: LontarNaskah[] = [
     published: true,
     coverImage: '/images/carita-parahyangan.jpg',
     scanImages: [],
+    sinopsis: 'Carita Parahyangan adalah salah satu naskah kuno Sunda terpenting yang berisi sejarah kerajaan Sunda dan Galuh, menceritakan silsilah serta peristiwa politik dan keagamaan masa lampau.',
     verses: [
       {
         id: 'v1',
@@ -92,6 +94,50 @@ export const naskahSeed: LontarNaskah[] = [
         makna: 'Ayat ini menggambarkan fondasi pemerintahan Sunda kuno yang bersandar pada hukum adat — bukan kekuasaan semata, melainkan legitimasi yang datang dari tradisi leluhur yang hidup di tengah masyarakat.',
         catatan: 'Kombinasi "hukum adat laksana" adalah frasa baku dalam naskah-naskah Sunda abad ke-15 hingga ke-17 yang menandai sistem yurisprudensi adat.',
       },
+    ],
+  },
+  {
+    id: 'sanghyang-siksa-002',
+    title: 'Sanghyang Siksa Kandang Karesian',
+    sumber: 'Koleksi Museum Sri Baduga',
+    tahun: '1518 M',
+    aksaraType: 'Aksara Sunda Kuno',
+    published: true,
+    coverImage: '/images/sanghyang-siksa.jpg',
+    scanImages: [],
+    sinopsis: 'Naskah didaktis berisi pedoman moral, aturan bermasyarakat, serta pengetahuan ensiklopedis mengenai budaya Sunda di abad ke-16.',
+    verses: [
+      {
+        id: 'v1',
+        verseNumber: 1,
+        words: [
+          { id: 'v1w1', aksara: 'ᮞᮀᮠᮡᮀ', latin: 'Sanghyang', terjemah: 'Yang Suci', kelas: 'kata sifat' },
+          { id: 'v1w2', aksara: 'ᮞᮤᮊ᮪ᮞ', latin: 'Siksa', terjemah: 'Ajaran', kelas: 'kata benda' },
+        ],
+        terjemahVerse: 'Ajaran suci bagi pandita.',
+      }
+    ],
+  },
+  {
+    id: 'bujangga-manik-003',
+    title: 'Bujangga Manik',
+    sumber: 'Koleksi Bodleian Library',
+    tahun: 'Abad ke-15 M',
+    aksaraType: 'Aksara Sunda Kuno',
+    published: true,
+    coverImage: '/images/bujangga-manik.jpg',
+    scanImages: [],
+    sinopsis: 'Kisah perjalanan (itinerari) seorang resi peziarah dari Kerajaan Sunda yang mengelilingi pulau Jawa hingga Bali.',
+    verses: [
+      {
+        id: 'v1',
+        verseNumber: 1,
+        words: [
+          { id: 'v1w1', aksara: 'ᮘᮥᮏᮀᮌ', latin: 'Bujangga', terjemah: 'Bujangga / Resi', kelas: 'kata benda' },
+          { id: 'v1w2', aksara: 'ᮙᮔᮤᮊ᮪', latin: 'Manik', terjemah: 'Manik (Permata)', kelas: 'nama diri' },
+        ],
+        terjemahVerse: 'Bujangga Manik memulai perjalanannya.',
+      }
     ],
   },
 ]
