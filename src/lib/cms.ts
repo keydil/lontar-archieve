@@ -16,7 +16,7 @@ import { supabase, supabaseConfigured, MEDIA_BUCKET } from './supabase'
 import { artifacts as koleksiSeed } from '@/data/koleksi'
 import type { Artifact } from '@/data/koleksi'
 import { naskahSeed } from '@/data/naskah'
-import type { LontarNaskah } from '@/data/naskah'
+import type { LontarNaskah, LontarVerse } from '@/data/naskah'
 
 export type { Artifact, LontarNaskah }
 
@@ -31,6 +31,24 @@ const T_KOLEKSI = 'koleksi'
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x))
+}
+
+// ============================================================
+// NORMALIZE — kompatibilitas data lama (verses[] + scanImages[]
+// flat, sebelum struktur Buku → Lembar/Halaman). Data baru sudah
+// punya `lembar`, jadi fungsi ini cuma dijalankan untuk data lama
+// yang mungkin masih ada di Supabase / file backup JSON.
+// ============================================================
+function normalizeNaskah(raw: unknown): LontarNaskah {
+  const n = raw as LontarNaskah & { verses?: LontarVerse[]; scanImages?: string[] }
+  if (Array.isArray(n.lembar)) return n
+  const { verses, scanImages, ...rest } = n
+  return {
+    ...rest,
+    lembar: [
+      { id: uid('lembar'), lembarNumber: 1, scanImage: scanImages?.[0], verses: verses ?? [] },
+    ],
+  } as LontarNaskah
 }
 
 export function seedData(): CMSData {
@@ -60,7 +78,7 @@ export async function fetchAll(): Promise<CMSData> {
   const seed = seedData()
 
   // Bila query error (mis. tabel belum dibuat), fallback ke seed.
-  const naskah = n.error ? seed.naskah : (n.data ?? []).map((r) => r.data as LontarNaskah)
+  const naskah = n.error ? seed.naskah : (n.data ?? []).map((r) => normalizeNaskah(r.data))
   const koleksi = k.error ? seed.koleksi : (k.data ?? []).map((r) => r.data as Artifact)
 
   // Fallback per-tabel bila kosong (belum di-seed) supaya situs tak blank.
@@ -180,7 +198,7 @@ export async function exportJSON(): Promise<string> {
 export async function importJSON(json: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const parsed = JSON.parse(json) as Partial<CMSData>
-    for (const n of parsed.naskah ?? []) await upsertNaskah(n)
+    for (const n of parsed.naskah ?? []) await upsertNaskah(normalizeNaskah(n))
     for (const k of parsed.koleksi ?? []) await upsertKoleksi(k)
     emit()
     return { ok: true }
