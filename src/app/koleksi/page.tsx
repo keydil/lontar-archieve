@@ -229,6 +229,30 @@ export default function KoleksiPage() {
               <div className="koleksi-thumb-zoom" style={{ width: '100%', height: '100%' }}>
                 <ArtifactThumb src={artifact.thumbnail} alt={artifact.name} />
               </div>
+              {artifact.modelUrl && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '1rem',
+                    right: '1rem',
+                    zIndex: 2,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.35rem 0.7rem',
+                    borderRadius: '999px',
+                    background: 'var(--charcoal)',
+                    color: 'var(--bone)',
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  ◇ 3D
+                </span>
+              )}
             </div>
 
             {/* Card Info */}
