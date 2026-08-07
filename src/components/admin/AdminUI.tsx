@@ -456,7 +456,7 @@ export function ModelUpload({
                 const externalTextures = await getExternalTextureUris(file)
                 if (externalTextures.length > 0) {
                   const lanjut = await confirmDialog(
-                    `File ini merujuk ${externalTextures.length} file gambar terpisah (${externalTextures[0]}${externalTextures.length > 1 ? ', dll' : ''}) yang tidak ikut terpilih. Kalau lanjut, model akan tampil TANPA tekstur (polos) di situs. Sebaiknya batalkan, lalu proses dulu file ini pakai "node scripts/optimize-model.mjs" di komputer (baca public/models/README.md) sebelum unggah ulang.`,
+                    `File ini belum lengkap — tekstur/warnanya (${externalTextures.length} file gambar) ada di file terpisah yang tidak ikut terpilih. Kalau lanjut, model akan tampil TANPA tekstur (polos, warna dasar doang) di situs. Sebaiknya batalkan dulu, lalu minta pihak yang membuat scan 3D ini meng-export ulang dengan opsi "Embed Textures" / "Pack Textures into Binary" dicentang, supaya jadi satu file yang lengkap.`,
                     { danger: true, confirmLabel: 'Lanjut Tanpa Tekstur' },
                   )
                   if (!lanjut) return
