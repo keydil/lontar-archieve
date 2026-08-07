@@ -353,6 +353,25 @@ export async function uploadImage(file: File): Promise<string> {
 // ke B2, server kita cuma nerbitin izinnya — jadi gak kena limit
 // ukuran/durasi Vercel serverless function.
 // ============================================================
+// Cek cepat (baca JSON chunk doang, gak pakai gltf-transform) apakah
+// .glb ini merujuk tekstur file terpisah (bukan ter-embed). Hasil
+// export mentah RealityScan sering begini — browser gak bisa nyusul
+// ambil file PNG-nya sendiri (cuma file .glb yang dipilih admin),
+// jadi kalau diupload apa adanya, model bakal tampil TANPA tekstur.
+export async function getExternalTextureUris(file: File): Promise<string[]> {
+  try {
+    const buffer = await file.arrayBuffer()
+    const view = new DataView(buffer)
+    if (view.getUint32(0, true) !== 0x46546c67) return [] // bukan .glb valid, biarin proses normal yang nangkep errornya
+    const jsonLen = view.getUint32(12, true)
+    const json = JSON.parse(new TextDecoder().decode(buffer.slice(20, 20 + jsonLen)))
+    const images = (json.images ?? []) as { uri?: string }[]
+    return images.map((img) => img.uri).filter((uri): uri is string => Boolean(uri) && !uri!.startsWith('data:'))
+  } catch {
+    return []
+  }
+}
+
 // Kompres tekstur .glb di Web Worker sebelum upload (jalan di thread
 // terpisah biar tab gak freeze). Kalau gagal (bentuk .glb gak biasa,
 // dll), fallback ke file asli apa adanya — optimasi ini best-effort,

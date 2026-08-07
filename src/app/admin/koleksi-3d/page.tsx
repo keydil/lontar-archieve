@@ -23,12 +23,17 @@ export default function Koleksi3DListPage() {
     <ListView
       title="Koleksi"
       desc="Artefak museum beserta foto & videonya. Tampil di halaman Koleksi."
-      items={data.koleksi.map((k) => ({
-        key: k.slug,
-        primary: k.name,
-        secondary: `${k.type} · ${k.year} · ${k.media?.length ?? 0} media`,
-        thumb: k.thumbnail,
-      }))}
+      items={[...data.koleksi]
+        // Yang udah punya model 3D ditaro paling atas, biar gampang
+        // keliatan sekilas mana yang udah kelar tanpa buka satu-satu.
+        .sort((a, b) => Number(Boolean(b.modelUrl)) - Number(Boolean(a.modelUrl)))
+        .map((k) => ({
+          key: k.slug,
+          primary: k.name,
+          secondary: `${k.type} · ${k.year} · ${k.media?.length ?? 0} media`,
+          thumb: k.thumbnail,
+          badge: k.modelUrl ? '3D' : undefined,
+        }))}
       onNew={() => router.push('/admin/koleksi-3d/new')}
       onEdit={(key) => router.push(`/admin/koleksi-3d/${key}`)}
       onDelete={async (key) => {

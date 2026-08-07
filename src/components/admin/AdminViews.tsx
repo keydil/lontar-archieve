@@ -80,7 +80,7 @@ export function DashboardSkeleton() {
 // ============================================================
 // LIST VIEW (reusable — Arsip & Koleksi 3D)
 // ============================================================
-export interface ListItem { key: string; primary: string; secondary: string; thumb?: string }
+export interface ListItem { key: string; primary: string; secondary: string; thumb?: string; badge?: string }
 
 export function ListView({
   title, desc, items, onNew, onEdit, onDelete,
@@ -115,7 +115,26 @@ export function ListView({
                 : <span style={{ fontFamily: mono, fontSize: '18px', color: 'rgba(240,237,230,0.4)' }}>◇</span>}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: serif, fontSize: '18px', fontWeight: 700, color: 'var(--charcoal)' }}>{it.primary}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontFamily: serif, fontSize: '18px', fontWeight: 700, color: 'var(--charcoal)' }}>{it.primary}</span>
+                {it.badge && (
+                  <span
+                    style={{
+                      fontFamily: mono,
+                      fontSize: '10px',
+                      letterSpacing: '0.08em',
+                      fontWeight: 700,
+                      padding: '0.15rem 0.45rem',
+                      borderRadius: '999px',
+                      background: 'var(--charcoal)',
+                      color: 'var(--bone)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {it.badge}
+                  </span>
+                )}
+              </div>
               <div style={{ fontFamily: mono, fontSize: '12px', color: 'var(--warm)', marginTop: '3px' }}>{it.secondary}</div>
             </div>
             <Button variant="outline" onClick={() => onEdit(it.key)}>Edit</Button>

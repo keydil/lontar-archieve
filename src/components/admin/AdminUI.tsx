@@ -2,8 +2,8 @@
 
 import { forwardRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { aksaraSundaGroups } from '@/data/aksara-sunda'
-import { uploadImage, uploadModel } from '@/lib/cms'
-import { toast } from './Feedback'
+import { uploadImage, uploadModel, getExternalTextureUris } from '@/lib/cms'
+import { toast, confirmDialog } from './Feedback'
 
 const mono = "'DM Mono', monospace"
 
@@ -399,11 +399,33 @@ export function ModelUpload({
       : `Mengunggah… ${progress}%`
     : value
       ? value.split('/').pop()
-      : 'Belum ada model 3D'
+      : 'Belum ada model 3D — situs akan tampil galeri foto biasa'
 
   return (
     <Field label={label} hint="File .glb, ukuran berapapun. Tekstur dikompres otomatis di browser sebelum diunggah ke penyimpanan cloud, langsung tampil di situs setelah disimpan.">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        {!busy && (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignSelf: 'flex-start',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontFamily: mono,
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              padding: '0.3rem 0.6rem',
+              borderRadius: '999px',
+              background: value ? '#3f6b46' : 'rgba(240,237,230,0.08)',
+              color: value ? '#F0EDE6' : 'rgba(240,237,230,0.6)',
+            }}
+          >
+            <span>{value ? '✓' : '○'}</span>
+            <span>{value ? 'Model 3D Aktif' : 'Belum Ada Model 3D'}</span>
+          </div>
+        )}
         <div style={{ fontFamily: mono, fontSize: '12px', color: 'rgba(240,237,230,0.7)', wordBreak: 'break-all' }}>
           {statusText}
         </div>
@@ -428,7 +450,18 @@ export function ModelUpload({
               style={{ display: 'none' }}
               onChange={async (e) => {
                 const file = e.target.files?.[0]
+                e.target.value = '' // biar bisa pilih file yang sama lagi kalau mau ulang
                 if (!file) return
+
+                const externalTextures = await getExternalTextureUris(file)
+                if (externalTextures.length > 0) {
+                  const lanjut = await confirmDialog(
+                    `File ini merujuk ${externalTextures.length} file gambar terpisah (${externalTextures[0]}${externalTextures.length > 1 ? ', dll' : ''}) yang tidak ikut terpilih. Kalau lanjut, model akan tampil TANPA tekstur (polos) di situs. Sebaiknya batalkan, lalu proses dulu file ini pakai "node scripts/optimize-model.mjs" di komputer (baca public/models/README.md) sebelum unggah ulang.`,
+                    { danger: true, confirmLabel: 'Lanjut Tanpa Tekstur' },
+                  )
+                  if (!lanjut) return
+                }
+
                 setBusy(true)
                 setPhase('optimizing')
                 setProgress(0)
