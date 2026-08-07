@@ -20,7 +20,7 @@ export default function ArsipPage() {
             sama di src/app/koleksi/page.tsx. */}
         <a href="https://museumtalagamanggung.com" style={{ display: 'flex', alignItems: 'center' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/logo-museum.png" alt="Museum Talaga Manggung" style={{ height: '34px', width: 'auto' }} />
+          <img src="/images/logo-museum.png" alt="Museum Talaga Manggung" style={{ height: '48px', width: 'auto' }} />
         </a>
         <ul>
           {navItems.map((item) => {
@@ -47,6 +47,24 @@ export default function ArsipPage() {
           borderBottom: '1px solid var(--border)',
         }}
       >
+        <a
+          href="https://museumtalagamanggung.com"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            fontFamily: "'DM Mono', monospace",
+            fontSize: '11px',
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'var(--warm)',
+            textDecoration: 'none',
+            marginBottom: '3rem',
+          }}
+        >
+          <span style={{ fontSize: '14px', lineHeight: 1 }}>←</span>
+          Kembali ke Beranda
+        </a>
         <p
           style={{
             fontFamily: "'DM Mono', monospace",

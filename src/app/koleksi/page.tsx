@@ -107,7 +107,7 @@ export default function KoleksiPage() {
             biasa (bukan next/link) karena ini navigasi keluar domain. */}
         <a href="https://museumtalagamanggung.com" style={{ display: 'flex', alignItems: 'center' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/logo-museum.png" alt="Museum Talaga Manggung" style={{ height: '34px', width: 'auto' }} />
+          <img src="/images/logo-museum.png" alt="Museum Talaga Manggung" style={{ height: '48px', width: 'auto' }} />
         </a>
         <ul>
           {NAV_ITEMS.map((item) => {
