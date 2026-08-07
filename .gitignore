@@ -44,3 +44,4 @@ public/models/*.glb
 # kayak model .glb-nya, jangan ikut ke-commit. Cukup ada di lokal /
 # server produksi saja.
 public/models/*.png
+public/models/*.jpg

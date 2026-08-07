@@ -2,7 +2,7 @@
 
 import { Component, Suspense, useRef, useState, useEffect, useMemo, type ReactNode } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, useGLTF, Center, Bounds, Environment } from '@react-three/drei'
+import { OrbitControls, useGLTF, Center, Bounds, Environment, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 
 // Rotasi koreksi default (derajat) — ngoreksi konvensi sumbu "atas"
@@ -358,28 +358,24 @@ interface ModelViewerProps {
 }
 
 export default function ModelViewer({ modelUrl, rotation }: ModelViewerProps) {
-  const [loading, setLoading] = useState(true)
-  const [progress, setProgress] = useState(0)
+  // Progress ASLI dari THREE.DefaultLoadingManager (dipakai internal
+  // sama GLTFLoader/TextureLoader) — bukan animasi tebakan. Model
+  // .glb hasil fotogrametri bisa puluhan MB, jadi penting progress-nya
+  // jujur (biar pengunjung gak ngira situsnya freeze pas nunggu lama).
+  const { progress: loadProgress, active: loadActive } = useProgress()
+  const [ready, setReady] = useState(false)
   const [modelBroken, setModelBroken] = useState(false)
 
-  // Reset status "rusak" + progress loading tiap kali pindah artefak,
-  // biar boundary-nya dicoba ulang dari awal untuk model yang baru.
   useEffect(() => {
     setModelBroken(false)
-    setLoading(true)
-    setProgress(0)
-    let p = 0
-    const interval = setInterval(() => {
-      p += Math.random() * 25 + 10
-      if (p >= 100) {
-        p = 100
-        clearInterval(interval)
-        setTimeout(() => setLoading(false), 300)
-      }
-      setProgress(p)
-    }, 200)
-    return () => clearInterval(interval)
+    setReady(false)
   }, [modelUrl])
+
+  useEffect(() => {
+    if (!loadActive && loadProgress >= 100) setReady(true)
+  }, [loadActive, loadProgress])
+
+  const loading = !ready
 
   // <model-viewer> adalah custom element DOM biasa — tidak bisa
   // dipasang di dalam <Canvas> (konteks WebGL milik react-three-fiber).
@@ -389,7 +385,7 @@ export default function ModelViewer({ modelUrl, rotation }: ModelViewerProps) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {loading && <LoadingScreen progress={progress} />}
+      {loading && <LoadingScreen progress={loadProgress} />}
       {!useFallback && <DragHint />}
 
       {useFallback ? (

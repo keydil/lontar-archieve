@@ -353,11 +353,46 @@ export async function uploadImage(file: File): Promise<string> {
 // ke B2, server kita cuma nerbitin izinnya — jadi gak kena limit
 // ukuran/durasi Vercel serverless function.
 // ============================================================
-export async function uploadModel(file: File, onProgress?: (pct: number) => void): Promise<string> {
+// Kompres tekstur .glb di Web Worker sebelum upload (jalan di thread
+// terpisah biar tab gak freeze). Kalau gagal (bentuk .glb gak biasa,
+// dll), fallback ke file asli apa adanya — optimasi ini best-effort,
+// jangan sampai gagalnya nge-block upload.
+function optimizeModelInBrowser(file: File): Promise<Blob> {
+  return new Promise((resolve) => {
+    file.arrayBuffer().then((buffer) => {
+      const worker = new Worker(new URL('../workers/optimizeModel.worker.ts', import.meta.url))
+      const cleanup = () => worker.terminate()
+      worker.onmessage = (e: MessageEvent<{ ok: boolean; buffer?: ArrayBuffer; error?: string }>) => {
+        cleanup()
+        if (e.data.ok && e.data.buffer) {
+          resolve(new Blob([e.data.buffer], { type: 'model/gltf-binary' }))
+        } else {
+          console.warn('[uploadModel] Optimasi tekstur dilewati:', e.data.error)
+          resolve(file)
+        }
+      }
+      worker.onerror = (err) => {
+        cleanup()
+        console.warn('[uploadModel] Worker optimasi gagal, pakai file asli:', err.message)
+        resolve(file)
+      }
+      worker.postMessage({ buffer, name: file.name }, [buffer])
+    })
+  })
+}
+
+export async function uploadModel(
+  file: File,
+  onProgress?: (pct: number) => void,
+  onPhase?: (phase: 'optimizing' | 'uploading') => void,
+): Promise<string> {
   await requireConfigured()
   const { data: sessionData } = await supabase.auth.getSession()
   const token = sessionData.session?.access_token
   if (!token) throw new Error('Belum login.')
+
+  onPhase?.('optimizing')
+  const uploadBlob = await optimizeModelInBrowser(file)
 
   const presignRes = await fetch('/api/models/presign', {
     method: 'POST',
@@ -370,6 +405,7 @@ export async function uploadModel(file: File, onProgress?: (pct: number) => void
   }
   const { uploadUrl, publicUrl } = await presignRes.json() as { uploadUrl: string; publicUrl: string }
 
+  onPhase?.('uploading')
   // XHR (bukan fetch) supaya bisa lapor progress — penting buat file
   // ratusan MB yang bisa makan waktu lama.
   await new Promise<void>((resolve, reject) => {
@@ -381,7 +417,7 @@ export async function uploadModel(file: File, onProgress?: (pct: number) => void
     }
     xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload gagal (${xhr.status}).`)))
     xhr.onerror = () => reject(new Error('Upload gagal — periksa koneksi internet.'))
-    xhr.send(file)
+    xhr.send(uploadBlob)
   })
 
   return publicUrl

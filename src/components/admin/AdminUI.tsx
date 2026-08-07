@@ -390,17 +390,34 @@ export function ModelUpload({
   label?: string
 }) {
   const [busy, setBusy] = useState(false)
+  const [phase, setPhase] = useState<'optimizing' | 'uploading'>('optimizing')
   const [progress, setProgress] = useState(0)
 
+  const statusText = busy
+    ? phase === 'optimizing'
+      ? 'Mengoptimasi tekstur…'
+      : `Mengunggah… ${progress}%`
+    : value
+      ? value.split('/').pop()
+      : 'Belum ada model 3D'
+
   return (
-    <Field label={label} hint="File .glb, ukuran berapapun. Upload langsung ke penyimpanan cloud, otomatis tampil di situs setelah disimpan.">
+    <Field label={label} hint="File .glb, ukuran berapapun. Tekstur dikompres otomatis di browser sebelum diunggah ke penyimpanan cloud, langsung tampil di situs setelah disimpan.">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
         <div style={{ fontFamily: mono, fontSize: '12px', color: 'rgba(240,237,230,0.7)', wordBreak: 'break-all' }}>
-          {busy ? `Mengunggah… ${progress}%` : value ? value.split('/').pop() : 'Belum ada model 3D'}
+          {statusText}
         </div>
         {busy && (
           <div style={{ height: '4px', borderRadius: '2px', background: 'var(--border)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress}%`, background: 'var(--warm)', transition: 'width 0.2s' }} />
+            <div
+              style={{
+                height: '100%',
+                width: phase === 'optimizing' ? '100%' : `${progress}%`,
+                background: 'var(--warm)',
+                transition: 'width 0.2s',
+                animation: phase === 'optimizing' ? 'pulse 1.2s ease-in-out infinite' : undefined,
+              }}
+            />
           </div>
         )}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -413,9 +430,10 @@ export function ModelUpload({
                 const file = e.target.files?.[0]
                 if (!file) return
                 setBusy(true)
+                setPhase('optimizing')
                 setProgress(0)
                 try {
-                  const url = await uploadModel(file, setProgress)
+                  const url = await uploadModel(file, setProgress, setPhase)
                   onChange(url)
                   toast('Model 3D berhasil diunggah.', 'success')
                 } catch (err) {

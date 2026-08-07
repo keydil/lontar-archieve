@@ -890,3 +890,10 @@ body {
     gap: 0.75rem !important;
   }
 }
+
+/* Indikator progress tak-tentu (dipakai saat mengoptimasi model 3D
+   di browser, sebelum ada angka persentase upload yang nyata). */
+@keyframes pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
