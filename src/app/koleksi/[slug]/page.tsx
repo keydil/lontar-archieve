@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
@@ -17,7 +17,10 @@ export default function KoleksiDetailPage() {
   const slug = params.slug as string
   const [artifact, setArtifact] = useState<Artifact | null>(null)
   const [langId, setLangId] = useState(true) // true = Indonesia, false = English
-  const [activeHotspot, setActiveHotspot] = useState<string | null>(null)
+  // Foto dulu: indeks foto yang sedang dilihat. showModel=true baru
+  // menampilkan model 3D (hanya untuk artefak yang punya .glb).
+  const [activeMedia, setActiveMedia] = useState(0)
+  const [showModel, setShowModel] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -58,16 +61,7 @@ export default function KoleksiDetailPage() {
         { opacity: 1, y: 0, duration: 0.6, stagger: 0.08, ease: 'power3.out' },
         '-=0.4'
       )
-      .to(
-        '.detail-hotspot-btn',
-        { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power3.out' },
-        '-=0.3'
-      )
   }, [artifact])
-
-  const handleHotspotClick = useCallback((id: string | null) => {
-    setActiveHotspot(id)
-  }, [])
 
   if (!artifact) {
     return (
@@ -113,7 +107,13 @@ export default function KoleksiDetailPage() {
     )
   }
 
-  const activeHs = artifact.hotspots.find((h) => h.id === activeHotspot)
+  const media = artifact.media ?? []
+  const has3D = Boolean(artifact.modelUrl)
+  const current = media[activeMedia]
+  // strip hanya berguna kalau ada lebih dari satu hal untuk dilihat
+  const hasStrip = media.length + (has3D ? 1 : 0) > 1
+  // artefak tanpa foto tapi punya 3D -> langsung tampilkan 3D
+  const show3D = showModel || (has3D && media.length === 0)
 
   return (
     <>
@@ -126,7 +126,7 @@ export default function KoleksiDetailPage() {
         className="detail-layout"
       >
         {/* ============================================ */}
-        {/* LEFT — 3D Viewer                             */}
+        {/* LEFT — Galeri Foto (3D bila modelnya ada)    */}
         {/* ============================================ */}
         <div
           style={{
@@ -137,19 +137,160 @@ export default function KoleksiDetailPage() {
               'linear-gradient(180deg, rgba(200,169,110,0.04) 0%, rgba(240,237,230,1) 100%)',
           }}
         >
-          <ModelViewer
-            slug={artifact.modelSlug || artifact.slug}
-            type={artifact.type}
-            hotspots={artifact.hotspots}
-            activeHotspot={activeHotspot}
-            onHotspotClick={handleHotspotClick}
-          />
+          {/* Model 3D hanya di-mount kalau artefak ini benar-benar punya
+              file .glb. Sebagian besar koleksi baru berupa foto, jadi
+              WebGL tidak dinyalakan percuma. */}
+          {has3D && (
+            <div style={{ position: 'absolute', inset: 0, visibility: show3D ? 'visible' : 'hidden' }}>
+              <ModelViewer modelUrl={artifact.modelUrl!} rotation={artifact.modelRotation} />
+            </div>
+          )}
+
+          {/* Foto / video terpilih */}
+          {!show3D && current && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#1A1918',
+              }}
+            >
+              {current.type === 'video' ? (
+                <video src={current.url} controls style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={current.url}
+                  alt={current.caption || artifact.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              )}
+              {current.caption && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: hasStrip ? '7.5rem' : '1.5rem',
+                    left: 0,
+                    right: 0,
+                    padding: '0.75rem 1.5rem',
+                    color: 'var(--bone)',
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '11px',
+                    letterSpacing: '0.05em',
+                    background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
+                  }}
+                >
+                  {current.caption}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Belum ada foto maupun 3D */}
+          {!show3D && !current && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.75rem',
+                color: 'var(--warm)',
+                fontFamily: "'DM Mono', monospace",
+              }}
+            >
+              <span style={{ fontSize: '30px', opacity: 0.5 }}>&#9707;</span>
+              <span style={{ fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                Dokumentasi belum tersedia
+              </span>
+            </div>
+          )}
+
+          {/* Strip thumbnail — muncul kalau ada lebih dari satu tampilan */}
+          {hasStrip && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                zIndex: 6,
+                display: 'flex',
+                gap: '8px',
+                padding: '1rem 1.5rem',
+                overflowX: 'auto',
+                background: 'linear-gradient(transparent, rgba(17,17,16,0.55))',
+              }}
+            >
+              {media.map((m, idx) => (
+                <button
+                  key={m.id}
+                  onClick={() => { setShowModel(false); setActiveMedia(idx) }}
+                  title={m.caption || 'Foto ' + (idx + 1)}
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    flexShrink: 0,
+                    border: !show3D && activeMedia === idx ? '3px solid var(--bone)' : '1px solid rgba(240,237,230,0.4)',
+                    background: '#1A1918',
+                    color: 'var(--bone)',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    padding: 0,
+                  }}
+                >
+                  {m.type === 'video' && !m.thumbnail ? (
+                    <span style={{ fontSize: '18px' }}>&#9654;</span>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.thumbnail || m.url}
+                      alt={m.caption || 'Foto ' + (idx + 1)}
+                      loading="lazy"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  )}
+                </button>
+              ))}
+
+              {/* 3D ditaruh paling belakang — pelengkap, bukan yang utama */}
+              {has3D && (
+                <button
+                  onClick={() => setShowModel(true)}
+                  title="Lihat model 3D"
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    flexShrink: 0,
+                    border: show3D ? '3px solid var(--bone)' : '1px solid rgba(240,237,230,0.4)',
+                    background: '#1A1918',
+                    color: 'var(--bone)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '2px',
+                    padding: 0,
+                  }}
+                >
+                  <span style={{ fontSize: '17px' }}>&#9707;</span>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '8px', letterSpacing: '0.1em' }}>3D</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Watermark */}
           <div
             style={{
               position: 'absolute',
-              bottom: '1.5rem',
+              bottom: hasStrip ? '6rem' : '1.5rem',
               left: '1.5rem',
               zIndex: 5,
               pointerEvents: 'none',
@@ -164,7 +305,7 @@ export default function KoleksiDetailPage() {
                 fontFamily: "'DM Mono', monospace",
               }}
             >
-              3D Viewer — {artifact.slug}
+              {show3D ? 'Model 3D' : media.length + ' foto'} &mdash; {artifact.slug}
             </span>
           </div>
         </div>
@@ -388,98 +529,6 @@ export default function KoleksiDetailPage() {
               </div>
             ))}
           </div>
-
-          {/* Hotspot Buttons */}
-          <div style={{ marginBottom: '2rem' }}>
-            <p
-              style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: '11px',
-                letterSpacing: '0.25em',
-                textTransform: 'uppercase',
-                color: 'var(--warm)',
-                marginBottom: '1rem',
-              }}
-            >
-              — Titik Anotasi
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {artifact.hotspots.map((hs) => (
-                <button
-                  key={hs.id}
-                  className="detail-hotspot-btn"
-                  onClick={() =>
-                    setActiveHotspot(activeHotspot === hs.id ? null : hs.id)
-                  }
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    padding: '0.75rem 1rem',
-                    border: '1px solid var(--border)',
-                    background:
-                      activeHotspot === hs.id ? 'var(--charcoal)' : 'transparent',
-                    color:
-                      activeHotspot === hs.id ? 'var(--bone)' : 'var(--charcoal)',
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: '12px',
-                    letterSpacing: '0.08em',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    textAlign: 'left',
-                    opacity: 0,
-                    transform: 'translateY(10px)',
-                  }}
-                >
-                  <span
-                    style={{
-                      width: '6px',
-                      height: '6px',
-                      borderRadius: '50%',
-                      background:
-                        activeHotspot === hs.id ? '#C8A96E' : 'var(--warm)',
-                      flexShrink: 0,
-                    }}
-                  />
-                  {hs.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Active Hotspot Detail */}
-          {activeHs && (
-            <div
-              style={{
-                padding: '1.5rem',
-                border: '1px solid var(--border)',
-                background: 'rgba(200,169,110,0.04)',
-                marginBottom: '2rem',
-              }}
-            >
-              <p
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: '19px',
-                  fontWeight: 700,
-                  color: 'var(--charcoal)',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                {activeHs.label}
-              </p>
-              <p
-                style={{
-                  fontFamily: "'DM Mono', monospace",
-                  fontSize: '13px',
-                  lineHeight: 1.8,
-                  color: 'var(--warm)',
-                }}
-              >
-                {langId ? activeHs.description_id : activeHs.description_en}
-              </p>
-            </div>
-          )}
 
           {/* Spacer */}
           <div style={{ flex: 1 }} />

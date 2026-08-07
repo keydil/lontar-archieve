@@ -64,10 +64,22 @@ export default function useGSAPAnimations() {
     gsap.to('.grid-item', {
       opacity: 1,
       y: 0,
-      duration: 0.9,
-      stagger: 0.15,
+      scale: 1,
+      duration: 1,
+      stagger: 0.18,
       ease: 'power3.out',
       scrollTrigger: { trigger: '.grid-items', start: 'top 75%' },
+    })
+
+    // Koleksi 3D section — cards (same considered-reveal treatment)
+    gsap.to('.koleksi-card', {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      duration: 1,
+      stagger: 0.18,
+      ease: 'power3.out',
+      scrollTrigger: { trigger: '#koleksi-3d', start: 'top 75%' },
     })
 
     // Footer brand

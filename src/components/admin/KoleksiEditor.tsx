@@ -1,37 +1,37 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import type { Artifact, Hotspot } from '@/data/koleksi'
+import type { Artifact, MediaItem } from '@/data/koleksi'
 import { uid, slugify } from '@/lib/cms'
-import { Field, Input, Textarea, Button, Card, SectionTitle, ImageUpload } from './AdminUI'
+import { Field, Input, Textarea, Select, Button, Card, SectionTitle, ImageUpload, ModelUpload } from './AdminUI'
 import QRCodeButton from './QRCodeButton'
 import { toast } from './Feedback'
 
 const mono = "'DM Mono', monospace"
 
-function emptyHotspot(): Hotspot {
-  return { id: uid('hs'), label: '', description_id: '', description_en: '', position: [0, 0, 0] }
+function emptyMedia(): MediaItem {
+  return { id: uid('media'), type: 'image', url: '', caption: '', thumbnail: '' }
 }
 
-export function blankKoleksi(): Artifact & { modelSlug?: string; images?: string[] } {
+export function blankKoleksi(): KoleksiForm {
   return {
     slug: '',
     name: '',
     year: '',
-    type: 'Manuscript',
+    type: '',
+    category: 'Arca',
     material: '',
     dimensions: '',
     artist: 'Unknown',
     country: 'Indonesia',
     address: 'Museum Talaga Manggung, Majalengka',
+    location: 'Ruang Pamer Utama',
     description_id: '',
     description_en: '',
-    hotspots: [],
   }
 }
 
-// Artifact extended with optional media fields (disimpan sebagai bagian objek)
-type KoleksiForm = Artifact & { modelSlug?: string; images?: string[] }
+type KoleksiForm = Artifact
 
 export default function KoleksiEditor({
   initial,
@@ -60,9 +60,6 @@ export default function KoleksiEditor({
     return () => onDirtyChange?.(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty])
-
-  const updateHotspot = (id: string, p: Partial<Hotspot>) =>
-    patch({ hotspots: item.hotspots.map((h) => (h.id === id ? { ...h, ...p } : h)) })
 
   function handleSave() {
     const next: typeof errors = {}
@@ -134,32 +131,64 @@ export default function KoleksiEditor({
         <Field label="Tahun / Periode">
           <Input value={item.year} onChange={(e) => patch({ year: e.target.value })} placeholder="Abad ke-14" />
         </Field>
+        <Field label="Kategori">
+          <select
+            value={item.category}
+            onChange={(e) => patch({ category: e.target.value })}
+            style={{ width: '100%', fontFamily: mono, fontSize: '14px', padding: '0.75rem 0.9rem', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bone)', color: 'var(--charcoal)' }}
+          >
+            {['Arca', 'Senjata Pusaka', 'Karya Seni', 'Senjata Berledak', 'Batu', 'Lainnya'].map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </Field>
         <Field label="Jenis (Type)">
-          <Input value={item.type} onChange={(e) => patch({ type: e.target.value })} placeholder="Manuscript / Footwear / Statue" />
-        </Field>
-        <Field label="Material">
-          <Input value={item.material} onChange={(e) => patch({ material: e.target.value })} placeholder="Lontar Leaf" />
-        </Field>
-        <Field label="Dimensi">
-          <Input value={item.dimensions} onChange={(e) => patch({ dimensions: e.target.value })} placeholder="30 × 5 × 0.3 cm" />
-        </Field>
-        <Field label="Pembuat / Artist">
-          <Input value={item.artist} onChange={(e) => patch({ artist: e.target.value })} placeholder="Unknown" />
-        </Field>
-        <Field label="Negara">
-          <Input value={item.country} onChange={(e) => patch({ country: e.target.value })} placeholder="Indonesia" />
+          <Input value={item.type} onChange={(e) => patch({ type: e.target.value })} placeholder="Arca Perunggu / Keris / Genta" />
         </Field>
       </div>
-      <Field label="Lokasi / Alamat">
-        <Input value={item.address} onChange={(e) => patch({ address: e.target.value })} placeholder="Museum Talaga Manggung, Majalengka" />
-      </Field>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1.5rem' }}>
+        <Field label="Lokasi di Museum">
+          <Input value={item.location ?? ''} onChange={(e) => patch({ location: e.target.value })} placeholder="Ruang Pamer Utama" />
+        </Field>
+        <Field label="Lokasi / Alamat">
+          <Input value={item.address} onChange={(e) => patch({ address: e.target.value })} placeholder="Museum Talaga Manggung, Majalengka" />
+        </Field>
+      </div>
 
-      <SectionTitle>Model 3D</SectionTitle>
+      <SectionTitle>Gambar Kartu &amp; Model 3D</SectionTitle>
+      <ImageUpload
+        label="Gambar Kartu (JPG/PNG)"
+        value={item.thumbnail}
+        onChange={(url) => patch({ thumbnail: url })}
+      />
+      <p style={{ fontFamily: mono, fontSize: '13px', color: 'var(--warm)', marginTop: '-0.75rem', marginBottom: '1.25rem', lineHeight: 1.6 }}>
+        Foto ini yang tampil di daftar Koleksi. Kalau dikosongkan, dipakai foto pertama dari Galeri Media di bawah.
+      </p>
+      <ModelUpload value={item.modelUrl} onChange={(url) => patch({ modelUrl: url })} />
+
       <Field
-        label="Nama File Model (.glb)"
-        hint="File .glb diletakkan di public/models/. Isi nama tanpa .glb — mis. 'macan_lonceng'. Kosongkan bila belum ada."
+        label="Rotasi Model (derajat)"
+        hint="Kalau model 3D tampil miring atau kebalik — putar sudut X, Y, Z di sini. Bawaan: X=-90, Y=0, Z=0."
       >
-        <Input value={item.modelSlug ?? item.slug} onChange={(e) => patch({ modelSlug: e.target.value })} placeholder="macan_lonceng" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+          {(['X', 'Y', 'Z'] as const).map((axis, idx) => (
+            <div key={axis}>
+              <span style={{ fontFamily: mono, fontSize: '11px', color: 'var(--warm)', display: 'block', marginBottom: '0.3rem' }}>
+                {axis}
+              </span>
+              <Input
+                type="number"
+                step="5"
+                value={(item.modelRotation ?? [-90, 0, 0])[idx]}
+                onChange={(e) => {
+                  const next: [number, number, number] = [...(item.modelRotation ?? [-90, 0, 0])]
+                  next[idx] = parseFloat(e.target.value) || 0
+                  patch({ modelRotation: next })
+                }}
+              />
+            </div>
+          ))}
+        </div>
       </Field>
 
       <SectionTitle>Deskripsi</SectionTitle>
@@ -170,52 +199,92 @@ export default function KoleksiEditor({
         <Textarea value={item.description_en} onChange={(e) => patch({ description_en: e.target.value })} style={{ minHeight: '120px' }} />
       </Field>
 
-      {/* Hotspots */}
-      <SectionTitle>Titik Anotasi (Hotspot)</SectionTitle>
+      {/* ── Galeri Media — foto, video, model 3D tambahan ── */}
+      <SectionTitle>Galeri Media</SectionTitle>
       <p style={{ fontFamily: mono, fontSize: '13px', color: 'var(--warm)', marginBottom: '1rem', lineHeight: 1.6 }}>
-        Titik interaktif pada model 3D. Posisi X/Y/Z menentukan letak titik pada model (biasanya antara -2 dan 2).
+        Dokumentasi artefak: foto detail, video (mis. proses Nyiramkeun), atau model 3D tambahan. Tampil sebagai
+        galeri dengan thumbnail di halaman koleksi. Media pertama otomatis jadi tampilan utama.
       </p>
-      {item.hotspots.map((hs, idx) => (
-        <Card key={hs.id} style={{ marginBottom: '1rem' }}>
+
+      {(item.media ?? []).map((m, idx) => (
+        <Card key={m.id} style={{ marginBottom: '1rem', padding: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontFamily: mono, fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--warm)' }}>
-              Hotspot {idx + 1}
-            </span>
-            <Button variant="danger" onClick={() => patch({ hotspots: item.hotspots.filter((h) => h.id !== hs.id) })}>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 700 }}>Media {idx + 1}</span>
+            <Button variant="danger" onClick={() => patch({ media: (item.media ?? []).filter((_, i) => i !== idx) })}>
               Hapus
             </Button>
           </div>
-          <Field label="Label">
-            <Input value={hs.label} onChange={(e) => updateHotspot(hs.id, { label: e.target.value })} placeholder="Aksara Kaganga" />
+
+          <Field label="Jenis Media">
+            <Select
+              value={m.type}
+              onChange={(e) => {
+                const next = [...(item.media ?? [])]
+                next[idx] = { ...m, type: e.target.value as MediaItem['type'] }
+                patch({ media: next })
+              }}
+            >
+              <option value="image">Gambar / Foto</option>
+              <option value="video">Video</option>
+            </Select>
           </Field>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1.5rem' }}>
-            <Field label="Deskripsi (ID)">
-              <Textarea value={hs.description_id} onChange={(e) => updateHotspot(hs.id, { description_id: e.target.value })} style={{ minHeight: '56px' }} />
+
+          {m.type === 'image' ? (
+            <ImageUpload
+              label="Upload Gambar"
+              value={m.url || undefined}
+              onChange={(url) => {
+                const next = [...(item.media ?? [])]
+                next[idx] = { ...m, url: url ?? '' }
+                patch({ media: next })
+              }}
+            />
+          ) : (
+            <Field label="URL Video" hint="mis. /videos/nyiramkeun.mp4">
+              <Input
+                value={m.url}
+                onChange={(e) => {
+                  const next = [...(item.media ?? [])]
+                  next[idx] = { ...m, url: e.target.value }
+                  patch({ media: next })
+                }}
+                placeholder="/videos/dokumentasi.mp4"
+              />
             </Field>
-            <Field label="Deskripsi (EN)">
-              <Textarea value={hs.description_en} onChange={(e) => updateHotspot(hs.id, { description_en: e.target.value })} style={{ minHeight: '56px' }} />
-            </Field>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 1rem' }}>
-            {(['x', 'y', 'z'] as const).map((axis, ai) => (
-              <Field key={axis} label={`Posisi ${axis.toUpperCase()}`}>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={hs.position[ai]}
-                  onChange={(e) => {
-                    const pos = [...hs.position] as [number, number, number]
-                    pos[ai] = parseFloat(e.target.value) || 0
-                    updateHotspot(hs.id, { position: pos })
-                  }}
-                />
-              </Field>
-            ))}
-          </div>
+          )}
+
+          {m.type === 'video' && (
+            <ImageUpload
+              label="Sampul Video (JPG/PNG)"
+              value={m.thumbnail || undefined}
+              onChange={(url) => {
+                const next = [...(item.media ?? [])]
+                next[idx] = { ...m, thumbnail: url }
+                patch({ media: next })
+              }}
+            />
+          )}
+
+          <Field label="Keterangan / Caption" hint="Opsional">
+            <Input
+              value={m.caption ?? ''}
+              onChange={(e) => {
+                const next = [...(item.media ?? [])]
+                next[idx] = { ...m, caption: e.target.value }
+                patch({ media: next })
+              }}
+              placeholder="mis. Detail pamor pada bilah keris"
+            />
+          </Field>
         </Card>
       ))}
-      <Button variant="outline" onClick={() => patch({ hotspots: [...item.hotspots, emptyHotspot()] })} style={{ width: '100%', padding: '0.8rem' }}>
-        + Tambah Hotspot
+
+      <Button
+        variant="outline"
+        onClick={() => patch({ media: [...(item.media ?? []), emptyMedia()] })}
+        style={{ width: '100%', padding: '0.9rem', marginBottom: '2rem' }}
+      >
+        + Tambah Media
       </Button>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>

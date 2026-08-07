@@ -42,7 +42,11 @@ export interface LontarNaskah {
   sumber: string
   tahun: string
   aksaraType?: string     // mis. "Aksara Sunda Kuno"
-  coverImage?: string     // gambar sampul (data URL / path)
+  coverImage?: string     // gambar sampul utama (data URL / path)
+  // Naskah cukup FOTO saja — nilai utamanya ada di transkripsi teks,
+  // bukan tontonan objeknya. Galeri kaya (video / model 3D) ada di
+  // artefak fisik; lihat MediaItem di src/data/koleksi.ts.
+  images?: string[]       // galeri foto naskah (URL / path)
   sinopsis?: string       // deskripsi singkat naskah
   published?: boolean     // tampil di publik atau masih draft
   finalized?: boolean     // true = struktur (jumlah lembar & ayat) terkunci; isi teks tetap bisa diedit
@@ -62,6 +66,11 @@ export const naskahSeed: LontarNaskah[] = [
     published: true,
     finalized: true,
     coverImage: '/images/carita-parahyangan.jpg',
+    images: [
+      '/images/carita-parahyangan.jpg',
+      '/images/sanghyang-siksa.jpg',
+      '/images/bujangga-manik.jpg',
+    ],
     sinopsis: 'Carita Parahyangan adalah salah satu naskah kuno Sunda terpenting yang berisi sejarah kerajaan Sunda dan Galuh, menceritakan silsilah serta peristiwa politik dan keagamaan masa lampau.',
     lembar: [
       {

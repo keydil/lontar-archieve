@@ -11,7 +11,7 @@ import { NAV_ITEMS } from '@/lib/nav'
 
 gsap.registerPlugin(ScrollTrigger)
 
-const CardPreview = dynamic(() => import('@/components/CardPreview'), { ssr: false })
+import ArtifactThumb from '@/components/ArtifactThumb'
 
 export default function KoleksiPage() {
   const headerRef = useRef<HTMLDivElement>(null)
@@ -48,8 +48,9 @@ export default function KoleksiPage() {
     gsap.to('.koleksi-card', {
       opacity: 1,
       y: 0,
-      duration: 0.9,
-      stagger: 0.15,
+      scale: 1,
+      duration: 1,
+      stagger: 0.18,
       ease: 'power3.out',
       scrollTrigger: { trigger: '.koleksi-grid', start: 'top 80%' },
     })
@@ -210,7 +211,7 @@ export default function KoleksiPage() {
                 idx < artifacts.length - 1 ? '1px solid var(--border)' : 'none',
               borderBottom: '1px solid var(--border)',
               opacity: 0,
-              transform: 'translateY(30px)',
+              transform: 'translateY(30px) scale(0.96)',
               transition: 'background 0.5s cubic-bezier(0.76, 0, 0.24, 1)',
             }}
           >
@@ -225,7 +226,9 @@ export default function KoleksiPage() {
                   'linear-gradient(135deg, rgba(200,169,110,0.05), rgba(200,169,110,0.02))',
               }}
             >
-              <CardPreview artifactType={artifact.type} />
+              <div className="koleksi-thumb-zoom" style={{ width: '100%', height: '100%' }}>
+                <ArtifactThumb src={artifact.thumbnail} alt={artifact.name} />
+              </div>
             </div>
 
             {/* Card Info */}

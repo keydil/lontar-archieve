@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase, supabaseConfigured, MEDIA_BUCKET } from './supabase'
 import { artifacts as koleksiSeed } from '@/data/koleksi'
-import type { Artifact } from '@/data/koleksi'
+import type { Artifact, MediaItem } from '@/data/koleksi'
 import { naskahSeed } from '@/data/naskah'
 import type { LontarNaskah, LontarVerse } from '@/data/naskah'
 
@@ -34,21 +34,99 @@ function clone<T>(x: T): T {
 }
 
 // ============================================================
-// NORMALIZE — kompatibilitas data lama (verses[] + scanImages[]
-// flat, sebelum struktur Buku → Lembar/Halaman). Data baru sudah
-// punya `lembar`, jadi fungsi ini cuma dijalankan untuk data lama
-// yang mungkin masih ada di Supabase / file backup JSON.
+// NORMALIZE — kompatibilitas data lama.
+//
+// Data di Supabase disimpan sebagai jsonb apa adanya, jadi baris yang
+// ditulis sebelum struktur berubah tetap memakai bentuk lama. Semua
+// penyesuaian dilakukan SAAT BACA supaya tidak ada data yang "hilang"
+// dari tampilan, dan ikut tersimpan dalam bentuk baru begitu pengelola
+// menyimpan ulang lewat panel admin.
+//
+// Bentuk lama yang ditangani:
+//  · naskah: `verses[]` + `scanImages[]` flat  → struktur `lembar[]`
+//  · naskah: `media[]` (foto/video/glb)        → `images[]` (foto saja)
+//  · koleksi: `images[]` (array string)        → `media[]` (MediaItem)
+//  · koleksi: media bertipe `glb`              → dibuang, 3D pakai modelUrl
 // ============================================================
+type LegacyMedia = { id?: string; type?: string; url?: string; caption?: string; thumbnail?: string }
+
 function normalizeNaskah(raw: unknown): LontarNaskah {
-  const n = raw as LontarNaskah & { verses?: LontarVerse[]; scanImages?: string[] }
-  if (Array.isArray(n.lembar)) return n
-  const { verses, scanImages, ...rest } = n
-  return {
-    ...rest,
-    lembar: [
+  const n = raw as LontarNaskah & {
+    verses?: LontarVerse[]
+    scanImages?: string[]
+    media?: LegacyMedia[]
+  }
+  const { verses, scanImages, media, ...rest } = n
+
+  // Galeri lama (media[]) → foto saja. Video/glb tidak dipakai di naskah,
+  // tapi URL-nya tetap diambil kalau itu gambar supaya tidak hilang.
+  let images = Array.isArray(rest.images) ? [...rest.images] : []
+  if (Array.isArray(media)) {
+    const fromMedia = media
+      .filter((m) => m && (m.type === 'image' || !m.type) && typeof m.url === 'string' && m.url)
+      .map((m) => m.url as string)
+    images = [...images, ...fromMedia.filter((u) => !images.includes(u))]
+  }
+
+  // Struktur lama: ayat & scan masih flat di level naskah.
+  let lembar = rest.lembar
+  if (!Array.isArray(lembar)) {
+    lembar = [
       { id: uid('lembar'), lembarNumber: 1, scanImage: scanImages?.[0], verses: verses ?? [] },
-    ],
-  } as LontarNaskah
+    ]
+    // Sisa scan (selain yang dipakai lembar 1) diselamatkan ke galeri foto
+    // supaya tidak ada gambar yang hilang begitu saja.
+    for (const extra of (scanImages ?? []).slice(1)) {
+      if (!images.includes(extra)) images.push(extra)
+    }
+  }
+
+  return { ...rest, images, lembar } as LontarNaskah
+}
+
+function normalizeKoleksi(raw: unknown): Artifact {
+  // Sengaja dibaca sebagai bentuk mentah: baris lama bisa memuat tipe
+  // media yang sudah tidak ada lagi di definisi Artifact (mis. 'glb').
+  const k = raw as Omit<Artifact, 'media'> & { images?: unknown; media?: LegacyMedia[] }
+  const { images, media: rawMedia, ...rest } = k
+
+  const media: MediaItem[] = []
+  const seen = new Set<string>()
+  const push = (url: string, item?: LegacyMedia) => {
+    if (!url || seen.has(url)) return
+    seen.add(url)
+    media.push({
+      id: item?.id || uid('media'),
+      // `glb` lama diturunkan jadi gambar hanya bila ada thumbnail-nya;
+      // kalau tidak, entri itu dilewati (3D sudah diwakili modelUrl).
+      type: item?.type === 'video' ? 'video' : 'image',
+      url,
+      caption: item?.caption,
+      thumbnail: item?.thumbnail,
+    })
+  }
+
+  for (const m of rawMedia ?? []) {
+    if (!m || typeof m.url !== 'string') continue
+    if (m.type === 'glb') {
+      if (m.thumbnail) push(m.thumbnail, { ...m, type: 'image', thumbnail: undefined })
+      continue
+    }
+    push(m.url, m)
+  }
+  // Bentuk paling lama: images sebagai array string biasa.
+  if (Array.isArray(images)) {
+    for (const url of images) if (typeof url === 'string') push(url)
+  }
+
+  // Kartu koleksi butuh gambar; pakai foto pertama kalau belum diset.
+  const thumbnail = rest.thumbnail || media.find((m) => m.type === 'image')?.url
+
+  // modelUrl (Cloudflare R2) & modelRotation disimpan apa adanya di record —
+  // gak ada lagi lookup ke file lokal/seed, semua sumbernya dari Supabase.
+  const modelRotation = rest.modelRotation ?? [0, 0, 0]
+
+  return { ...rest, modelRotation, thumbnail, media } as Artifact
 }
 
 export function seedData(): CMSData {
@@ -79,7 +157,7 @@ export async function fetchAll(): Promise<CMSData> {
 
   // Bila query error (mis. tabel belum dibuat), fallback ke seed.
   const naskah = n.error ? seed.naskah : (n.data ?? []).map((r) => normalizeNaskah(r.data))
-  const koleksi = k.error ? seed.koleksi : (k.data ?? []).map((r) => r.data as Artifact)
+  const koleksi = k.error ? seed.koleksi : (k.data ?? []).map((r) => normalizeKoleksi(r.data))
 
   // Fallback per-tabel bila kosong (belum di-seed) supaya situs tak blank.
   return {
@@ -169,7 +247,7 @@ export async function getKoleksiBySlug(slug: string): Promise<Artifact | undefin
   if (!supabaseConfigured) return seedData().koleksi.find((k) => k.slug === slug)
   const { data, error } = await supabase.from(T_KOLEKSI).select('data').eq('slug', slug).maybeSingle()
   if (error || !data) return seedData().koleksi.find((k) => k.slug === slug)
-  return data.data as Artifact
+  return normalizeKoleksi(data.data)
 }
 
 // ============================================================
@@ -199,7 +277,7 @@ export async function importJSON(json: string): Promise<{ ok: boolean; error?: s
   try {
     const parsed = JSON.parse(json) as Partial<CMSData>
     for (const n of parsed.naskah ?? []) await upsertNaskah(normalizeNaskah(n))
-    for (const k of parsed.koleksi ?? []) await upsertKoleksi(k)
+    for (const k of parsed.koleksi ?? []) await upsertKoleksi(normalizeKoleksi(k))
     emit()
     return { ok: true }
   } catch (e) {
@@ -266,4 +344,45 @@ export async function uploadImage(file: File): Promise<string> {
   if (error) throw error
   const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path)
   return data.publicUrl
+}
+
+// ============================================================
+// MODEL 3D UPLOAD — file `.glb` gak lewat Supabase Storage (kuota
+// kekecilan buat file ratusan MB), tapi ke Cloudflare R2 lewat
+// presigned URL (lihat /api/models/presign). Browser PUT LANGSUNG
+// ke B2, server kita cuma nerbitin izinnya — jadi gak kena limit
+// ukuran/durasi Vercel serverless function.
+// ============================================================
+export async function uploadModel(file: File, onProgress?: (pct: number) => void): Promise<string> {
+  await requireConfigured()
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData.session?.access_token
+  if (!token) throw new Error('Belum login.')
+
+  const presignRes = await fetch('/api/models/presign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ filename: file.name }),
+  })
+  if (!presignRes.ok) {
+    const body = await presignRes.json().catch(() => ({}))
+    throw new Error(body.error || 'Gagal menyiapkan upload.')
+  }
+  const { uploadUrl, publicUrl } = await presignRes.json() as { uploadUrl: string; publicUrl: string }
+
+  // XHR (bukan fetch) supaya bisa lapor progress — penting buat file
+  // ratusan MB yang bisa makan waktu lama.
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('PUT', uploadUrl)
+    xhr.setRequestHeader('Content-Type', 'model/gltf-binary')
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100))
+    }
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload gagal (${xhr.status}).`)))
+    xhr.onerror = () => reject(new Error('Upload gagal — periksa koneksi internet.'))
+    xhr.send(file)
+  })
+
+  return publicUrl
 }

@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { naskahSeed } from '@/data/naskah'
 import type { LontarWord, LontarVerse, LontarNaskah } from '@/data/naskah'
+import MediaGallery, { imagesToMedia } from './MediaGallery'
 
 export type { LontarWord, LontarVerse, LontarNaskah }
 
@@ -288,8 +289,8 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
         </div>
       </div>
 
-      {/* Gambar & Sinopsis */}
-      {(naskah.coverImage || naskah.sinopsis) && (
+      {/* Cover + Gallery + Sinopsis */}
+      {(naskah.coverImage || naskah.images?.length || naskah.sinopsis) && (
         <div style={{
           padding: '4rem',
           borderBottom: '1px solid var(--border)',
@@ -299,36 +300,36 @@ export default function LontarReader({ naskah = sampleNaskah }: LontarReaderProp
           gap: '2.5rem',
           background: 'var(--bone)',
         }}>
-          {naskah.coverImage && (
+          {/* Galeri foto naskah — foto saja, tanpa video/3D */}
+          {naskah.images && naskah.images.length > 0 ? (
+            <MediaGallery media={imagesToMedia(naskah.images)} title={naskah.title} />
+          ) : naskah.coverImage ? (
             <div style={{
               width: '100%',
               maxWidth: '960px',
               border: '6px solid var(--charcoal)',
               background: 'var(--charcoal)',
             }}>
-              <img 
-                src={naskah.coverImage} 
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={naskah.coverImage}
                 alt={naskah.title}
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  maxHeight: '500px',
-                  objectFit: 'cover',
-                  display: 'block'
-                }}
+                style={{ width: '100%', height: 'auto', maxHeight: '500px', objectFit: 'cover', display: 'block' }}
               />
             </div>
-          )}
+          ) : null}
+
+          {/* Sinopsis */}
           {naskah.sinopsis && (
             <h3 style={{
               fontFamily: "'Playfair Display', serif",
-              fontSize: 'clamp(24px, 4vw, 32px)',
+              fontSize: 'clamp(22px, 3.5vw, 30px)',
               fontWeight: 700,
               color: 'var(--charcoal)',
               textAlign: 'center',
               maxWidth: '800px',
-              lineHeight: 1.4,
-              marginTop: '1rem',
+              lineHeight: 1.5,
+              marginTop: '0.5rem',
             }}>
               {naskah.sinopsis}
             </h3>

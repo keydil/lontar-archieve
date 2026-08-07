@@ -43,6 +43,7 @@ export function blankNaskah(): LontarNaskah {
     published: true,
     finalized: false,
     coverImage: undefined,
+    images: [],
     sinopsis: '',
     lembar: [emptyLembar(1)],
   }
@@ -82,7 +83,7 @@ export default function NaskahEditor({
 
   // Lapor ke parent kalau ada perubahan belum disimpan — dipakai buat
   // nge-warn sebelum pindah tab/halaman (misal lagi ngedit Lembar 2 Ayat 3
-  // terus mau pindah ke Koleksi 3D, biar ga sia-sia tulisannya).
+  // terus mau pindah ke Koleksi, biar ga sia-sia tulisannya).
   const isDirty = JSON.stringify(naskah) !== JSON.stringify(initial)
   useEffect(() => {
     onDirtyChange?.(isDirty)
@@ -390,6 +391,42 @@ export default function NaskahEditor({
           <Field label="Sinopsis" hint="Ringkasan singkat naskah — tampil di kartu beranda & halaman baca.">
             <Textarea value={naskah.sinopsis ?? ''} onChange={(e) => patch({ sinopsis: e.target.value })} placeholder="Ringkasan singkat isi naskah…" style={{ minHeight: '90px' }} />
           </Field>
+
+          {/* ── Galeri Foto Naskah ── */}
+          <SectionTitle>Galeri Foto</SectionTitle>
+          <p style={{ fontFamily: mono, fontSize: '12px', color: 'var(--warm)', marginBottom: '1rem', lineHeight: 1.6 }}>
+            Foto tambahan naskah — tampil sebagai galeri di halaman baca. Cukup foto saja; video &amp; model 3D
+            dipakai untuk artefak fisik di menu Koleksi. Foto scan tiap lembar diisi di langkah Lembar.
+          </p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+            {(naskah.images ?? []).map((img, idx) => (
+              <div key={idx} style={{ position: 'relative', width: '140px' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img}
+                  alt={`Foto ${idx + 1}`}
+                  style={{ width: '140px', height: '140px', objectFit: 'cover', border: '1px solid var(--border)', borderRadius: '8px' }}
+                />
+                <button
+                  onClick={() => patch({ images: (naskah.images ?? []).filter((_, i) => i !== idx) })}
+                  title="Hapus foto"
+                  style={{ position: 'absolute', top: 6, right: 6, background: 'var(--charcoal)', color: 'var(--bone)', border: 'none', borderRadius: '4px', width: 24, height: 24, cursor: 'pointer', fontSize: 13 }}
+                >
+                  ×
+                </button>
+                <span style={{ display: 'block', fontFamily: mono, fontSize: '10px', color: 'var(--warm)', marginTop: '0.35rem', textAlign: 'center' }}>
+                  Foto {idx + 1}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <ImageUpload
+            label="+ Tambah Foto"
+            value={undefined}
+            onChange={(url) => url && patch({ images: [...(naskah.images ?? []), url] })}
+          />
         </div>
       )}
 

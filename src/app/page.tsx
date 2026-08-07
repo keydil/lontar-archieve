@@ -8,6 +8,7 @@ import useGSAPAnimations from '@/hooks/useGSAPAnimations'
 import { useMusic } from '@/components/MusicPlayer'
 import { useCMS } from '@/lib/cms'
 import { NAV_ITEMS } from '@/lib/nav'
+import ArtifactThumb from '@/components/ArtifactThumb'
 
 // Dynamic imports to avoid SSR issues with Three.js
 const HeroScene = dynamic(() => import('@/components/HeroScene'), { ssr: false })
@@ -332,7 +333,7 @@ export default function Home() {
               style={{
                 borderRight: idx < 2 ? '1px solid var(--border)' : 'none',
                 opacity: 0,
-                transform: 'translateY(30px)',
+                transform: 'translateY(30px) scale(0.96)',
                 display: 'flex',
                 flexDirection: 'column',
               }}
@@ -350,12 +351,12 @@ export default function Home() {
                 <img
                   src={item.coverImage || '/images/carita-parahyangan.jpg'}
                   alt={item.title}
+                  className="gi-thumb-zoom"
                   style={{
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
                     opacity: 0.85,
-                    transition: 'transform 0.6s ease, opacity 0.3s ease',
                   }}
                   onError={(e) => {
                     // Fallback: show placeholder if image not found
@@ -443,7 +444,7 @@ export default function Home() {
                       textDecoration: 'none',
                     }}
                   >
-                    <span className="cta-line" style={{ width: '20px', background: 'var(--warm)' }} />
+                    <span className="cta-line" style={{ width: '20px' }} />
                     Baca Naskah
                   </Link>
               </div>
@@ -509,12 +510,15 @@ export default function Home() {
             <Link
               key={artifact.slug}
               href={`/koleksi/${artifact.slug}`}
+              className="koleksi-card"
               style={{
                 textDecoration: 'none',
                 color: 'inherit',
                 borderRight: idx < artifacts.length - 1 ? '1px solid var(--border)' : 'none',
                 display: 'flex',
                 flexDirection: 'column',
+                opacity: 0,
+                transform: 'translateY(30px) scale(0.96)',
               }}
             >
               {/* 3D Preview area */}
@@ -530,38 +534,8 @@ export default function Home() {
                   overflow: 'hidden',
                 }}
               >
-                {/* Subtle grid pattern background */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    backgroundImage:
-                      'linear-gradient(rgba(240,237,230,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(240,237,230,0.04) 1px, transparent 1px)',
-                    backgroundSize: '32px 32px',
-                  }}
-                />
-                <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
-                  <div
-                    style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: '28px',
-                      marginBottom: '0.5rem',
-                      opacity: 0.6,
-                    }}
-                  >
-                    ⬡
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: '10px',
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(240,237,230,0.4)',
-                    }}
-                  >
-                    3D Model
-                  </div>
+                <div className="koleksi-thumb-zoom" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ArtifactThumb src={artifact.thumbnail} alt={artifact.name} dark />
                 </div>
                 <span
                   style={{
@@ -576,6 +550,7 @@ export default function Home() {
                     background: 'rgba(240,237,230,0.05)',
                     padding: '0.25rem 0.55rem',
                     border: '1px solid rgba(240,237,230,0.1)',
+                    zIndex: 1,
                   }}
                 >
                   {artifact.type}
@@ -585,6 +560,7 @@ export default function Home() {
               {/* Info area */}
               <div style={{ padding: '1.75rem 2rem 2rem' }}>
                 <div
+                  className="koleksi-card-type"
                   style={{
                     fontFamily: "'DM Mono', monospace",
                     fontSize: '10px',
@@ -592,11 +568,13 @@ export default function Home() {
                     textTransform: 'uppercase',
                     color: 'var(--warm)',
                     marginBottom: '0.5rem',
+                    transition: 'color 0.3s',
                   }}
                 >
                   {artifact.year} · {artifact.material}
                 </div>
                 <h3
+                  className="koleksi-card-name"
                   style={{
                     fontFamily: "'Playfair Display', serif",
                     fontSize: '24px',
@@ -605,11 +583,13 @@ export default function Home() {
                     letterSpacing: '-0.01em',
                     color: 'var(--charcoal)',
                     marginBottom: '1rem',
+                    transition: 'color 0.3s',
                   }}
                 >
                   {artifact.name}
                 </h3>
                 <div
+                  className="koleksi-card-cta"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -621,8 +601,8 @@ export default function Home() {
                     color: 'var(--charcoal)',
                   }}
                 >
-                  <span style={{ width: '16px', height: '1px', background: 'var(--charcoal)', display: 'inline-block' }} />
-                  Buka Viewer 3D
+                  <span className="cta-line" style={{ width: '16px', display: 'inline-block' }} />
+                  Lihat Detail
                 </div>
               </div>
             </Link>

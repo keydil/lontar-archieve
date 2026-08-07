@@ -220,9 +220,23 @@ body {
   color: var(--bone) !important;
 }
 
+/* CTA text/line stayed --warm-on-charcoal here before (unreadable against
+   the hover fill) — swap to bone like the rest of the card's hover text. */
+.grid-item:hover .gi-link {
+  color: var(--bone) !important;
+}
+
 .grid-item > * {
   position: relative;
   z-index: 1;
+}
+
+/* Thumbnail zoom on hover — Arsip cards (homepage) */
+.grid-item .gi-thumb-zoom {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.grid-item:hover .gi-thumb-zoom {
+  transform: scale(1.06);
 }
 
 /* CTA line */
@@ -240,6 +254,25 @@ body {
 
 .gi-link:hover .cta-line {
   width: 40px;
+}
+
+/* CTA nudge on hover — small directional cue alongside the line growth */
+.gi-link,
+.koleksi-card-cta {
+  transition: transform 0.3s ease;
+}
+.grid-item:hover .gi-link,
+.koleksi-card:hover .koleksi-card-cta {
+  transform: translateX(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grid-item .gi-thumb-zoom,
+  .koleksi-thumb-zoom,
+  .gi-link,
+  .koleksi-card-cta {
+    transition: none;
+  }
 }
 
 /* Footer link hover */
@@ -342,6 +375,14 @@ body {
   background: var(--bone) !important;
 }
 
+/* Thumbnail zoom on hover — Koleksi cards (homepage + /koleksi) */
+.koleksi-thumb-zoom {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.koleksi-card:hover .koleksi-thumb-zoom {
+  transform: scale(1.06);
+}
+
 /* Detail panel custom scrollbar */
 .detail-panel::-webkit-scrollbar {
   width: 3px;
@@ -359,11 +400,6 @@ body {
 .detail-back:hover,
 .koleksi-nav-back:hover {
   color: var(--charcoal) !important;
-}
-
-/* Hotspot button hover */
-.detail-hotspot-btn:hover {
-  border-color: var(--charcoal) !important;
 }
 
 /* Responsive — Koleksi Grid */
@@ -634,7 +670,7 @@ body {
 .music-toggle-global {
   position: fixed;
   bottom: 2rem;
-  left: 2rem;
+  right: 2rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;

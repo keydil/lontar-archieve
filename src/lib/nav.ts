@@ -19,6 +19,6 @@ export interface AdminNavItem {
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: 'dashboard', label: 'Dashboard', href: '/admin' },
   { id: 'arsip', label: 'Arsip', href: '/admin/arsip' },
-  { id: 'koleksi', label: 'Koleksi 3D', href: '/admin/koleksi-3d' },
+  { id: 'koleksi', label: 'Koleksi', href: '/admin/koleksi-3d' },
   { id: 'backup', label: 'Data & Backup', href: '/admin/backup' },
 ]

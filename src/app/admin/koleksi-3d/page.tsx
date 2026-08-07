@@ -21,13 +21,13 @@ export default function Koleksi3DListPage() {
 
   return (
     <ListView
-      title="Koleksi 3D"
-      desc="Artefak dengan model 3D & hotspot. Tampil di halaman Koleksi."
+      title="Koleksi"
+      desc="Artefak museum beserta foto & videonya. Tampil di halaman Koleksi."
       items={data.koleksi.map((k) => ({
         key: k.slug,
         primary: k.name,
-        secondary: `${k.type} · ${k.year} · ${k.hotspots.length} hotspot`,
-        thumb: k.images?.[0],
+        secondary: `${k.type} · ${k.year} · ${k.media?.length ?? 0} media`,
+        thumb: k.thumbnail,
       }))}
       onNew={() => router.push('/admin/koleksi-3d/new')}
       onEdit={(key) => router.push(`/admin/koleksi-3d/${key}`)}

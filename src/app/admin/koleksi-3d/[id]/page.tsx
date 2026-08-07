@@ -25,7 +25,7 @@ export default function Koleksi3DEditPage() {
           Artefak dengan slug "{params.id}" tidak ditemukan.
         </p>
         <Link href="/admin/koleksi-3d" style={{ fontFamily: mono, fontSize: '13px', color: 'var(--charcoal)', textDecoration: 'underline' }}>
-          ← Kembali ke Koleksi 3D
+          ← Kembali ke Koleksi
         </Link>
       </div>
     )

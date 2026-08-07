@@ -39,3 +39,8 @@ next-env.d.ts
 public/models/*.glb
 # allow these specific models that are small enough:
 !public/models/sepatu-koku.glb
+
+# 3D model textures (hasil RealityScan, u0_v0_*.png) — sama gedenya
+# kayak model .glb-nya, jangan ikut ke-commit. Cukup ada di lokal /
+# server produksi saja.
+public/models/*.png

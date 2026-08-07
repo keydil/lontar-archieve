@@ -2,7 +2,7 @@
 
 import { forwardRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { aksaraSundaGroups } from '@/data/aksara-sunda'
-import { uploadImage } from '@/lib/cms'
+import { uploadImage, uploadModel } from '@/lib/cms'
 import { toast } from './Feedback'
 
 const mono = "'DM Mono', monospace"
@@ -368,6 +368,82 @@ export function ImageUpload({
             </span>
           </label>
           {value && (
+            <Button type="button" variant="danger" onClick={() => onChange(undefined)}>
+              Hapus
+            </Button>
+          )}
+        </div>
+      </div>
+    </Field>
+  )
+}
+
+// ── Upload model 3D (.glb) — file besar (puluhan-ratusan MB), jadi
+// pakai progress bar, bukan pratinjau kayak ImageUpload. ──
+export function ModelUpload({
+  value,
+  onChange,
+  label = 'Model 3D (.glb)',
+}: {
+  value?: string
+  onChange: (url: string | undefined) => void
+  label?: string
+}) {
+  const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState(0)
+
+  return (
+    <Field label={label} hint="File .glb, ukuran berapapun. Upload langsung ke penyimpanan cloud, otomatis tampil di situs setelah disimpan.">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        <div style={{ fontFamily: mono, fontSize: '12px', color: 'rgba(240,237,230,0.7)', wordBreak: 'break-all' }}>
+          {busy ? `Mengunggah… ${progress}%` : value ? value.split('/').pop() : 'Belum ada model 3D'}
+        </div>
+        {busy && (
+          <div style={{ height: '4px', borderRadius: '2px', background: 'var(--border)', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: 'var(--warm)', transition: 'width 0.2s' }} />
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <label>
+            <input
+              type="file"
+              accept=".glb,model/gltf-binary"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                setBusy(true)
+                setProgress(0)
+                try {
+                  const url = await uploadModel(file, setProgress)
+                  onChange(url)
+                  toast('Model 3D berhasil diunggah.', 'success')
+                } catch (err) {
+                  toast('Gagal mengunggah model: ' + (err as Error).message, 'error')
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            />
+            <span
+              style={{
+                display: 'inline-block',
+                fontFamily: mono,
+                fontSize: '12px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                padding: '0.65rem 1.2rem',
+                border: '1px solid var(--border)',
+                borderRadius: '6px',
+                cursor: busy ? 'default' : 'pointer',
+                opacity: busy ? 0.5 : 1,
+                pointerEvents: busy ? 'none' : 'auto',
+              }}
+            >
+              ⬆ Unggah .glb
+            </span>
+          </label>
+          {value && !busy && (
             <Button type="button" variant="danger" onClick={() => onChange(undefined)}>
               Hapus
             </Button>

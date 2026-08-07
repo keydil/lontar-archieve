@@ -15,7 +15,7 @@ const serif = "'Playfair Display', serif"
 export function Dashboard({ data }: { data: ReturnType<typeof useCMS>['data'] }) {
   const cards: { label: string; count: number; href: string; desc: string }[] = [
     { label: 'Arsip', count: data.naskah.length, href: '/admin/arsip', desc: 'Teks interaktif per ayat' },
-    { label: 'Koleksi 3D', count: data.koleksi.length, href: '/admin/koleksi-3d', desc: 'Artefak & model 3D' },
+    { label: 'Koleksi', count: data.koleksi.length, href: '/admin/koleksi-3d', desc: 'Artefak, foto & video' },
   ]
   return (
     <div>
