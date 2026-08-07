@@ -410,6 +410,62 @@ body {
   .koleksi-card {
     border-right: none !important;
   }
+
+  /* Padding samping 4rem (64px) kekecilan sisanya di layar HP — di lebar
+     375px itu makan 128px, konten cuma dapat ~247px. Dikecilin biar teks
+     gak kepaksa wrap aneh. */
+  .koleksi-section {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+  .koleksi-header {
+    padding-top: 7rem !important;
+    padding-bottom: 2.5rem !important;
+  }
+  /* Judul & jumlah artefak jangan dipaksa sebaris di layar sempit. */
+  .koleksi-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1.25rem;
+  }
+  .koleksi-header-row .koleksi-meta {
+    padding-bottom: 0 !important;
+  }
+  /* Isi kartu ikut dirapatkan supaya sebanding dengan padding halaman. */
+  .koleksi-card-body {
+    padding: 1.5rem 1.5rem 2rem !important;
+  }
+  .koleksi-footer {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 1rem;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+
+  /* Nama kategori panjang-panjang ("Uang Kuno & Komoditas", "Prasasti &
+     Batu Site"), jadi kalau dibiarkan wrap tiap tombol makan satu baris
+     sendiri — 10 kategori jadi 10 baris dan halamannya terlihat berantakan.
+     Dijadikan satu baris yang bisa digeser mendatar, pola chip kategori
+     yang sudah biasa di layar sentuh. */
+  .koleksi-filter-pills {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    /* Bocorkan ke tepi layar supaya jelas kalau isinya masih bisa digeser,
+       lalu padding-nya dikembalikan di dalam. */
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    padding: 0.25rem 1.5rem;
+    scrollbar-width: none; /* Firefox */
+  }
+  .koleksi-filter-pills::-webkit-scrollbar {
+    display: none;
+  }
+  .koleksi-filter-pills > button {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
 }
 
 /* ============================================================ */

@@ -138,6 +138,7 @@ export default function KoleksiPage() {
 
       {/* HEADER */}
       <section
+        className="koleksi-section koleksi-header"
         style={{
           padding: '10rem 4rem 4rem',
           borderBottom: '1px solid var(--border)',
@@ -168,6 +169,7 @@ export default function KoleksiPage() {
 
         <div
           ref={headerRef}
+          className="koleksi-header-row"
           style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -229,6 +231,7 @@ export default function KoleksiPage() {
 
       {/* FILTER & PENCARIAN */}
       <section
+        className="koleksi-section"
         style={{
           padding: '2rem 4rem',
           borderBottom: '1px solid var(--border)',
@@ -256,7 +259,7 @@ export default function KoleksiPage() {
           }}
         />
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div className="koleksi-filter-pills" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           {[{ label: `Semua (${allArtifacts.length})`, value: null }, ...categories.map(([cat, n]) => ({ label: `${cat} (${n})`, value: cat }))].map(
             ({ label, value }) => {
               const isActive = activeCategory === value
@@ -290,6 +293,7 @@ export default function KoleksiPage() {
 
       {artifacts.length === 0 && (
         <section
+          className="koleksi-section"
           style={{
             padding: '5rem 4rem',
             textAlign: 'center',
@@ -371,7 +375,7 @@ export default function KoleksiPage() {
             </div>
 
             {/* Card Info */}
-            <div style={{ padding: '2rem 2rem 2.5rem' }}>
+            <div className="koleksi-card-body" style={{ padding: '2rem 2rem 2.5rem' }}>
               <div
                 style={{
                   display: 'flex',
@@ -475,6 +479,7 @@ export default function KoleksiPage() {
 
       {/* FOOTER — minimal */}
       <footer
+        className="koleksi-footer"
         style={{
           padding: '3rem 4rem',
           display: 'flex',
