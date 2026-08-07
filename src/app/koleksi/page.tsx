@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -17,7 +17,30 @@ export default function KoleksiPage() {
   const headerRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const { data } = useCMS()
-  const artifacts = data.koleksi
+  const allArtifacts = data.koleksi
+
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+
+  // Kategori dirakit dari data (bukan daftar hardcoded) biar otomatis
+  // ngikut kalau pengelola nambah kategori baru lewat panel admin.
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const a of allArtifacts) {
+      if (a.category) counts.set(a.category, (counts.get(a.category) ?? 0) + 1)
+    }
+    return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0], 'id'))
+  }, [allArtifacts])
+
+  const artifacts = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return allArtifacts.filter((a) => {
+      if (activeCategory && a.category !== activeCategory) return false
+      if (!q) return true
+      return [a.name, a.type, a.material, a.year, a.description_id]
+        .some((field) => field?.toLowerCase().includes(q))
+    })
+  }, [allArtifacts, activeCategory, query])
 
   useEffect(() => {
     // Header reveal
@@ -58,7 +81,21 @@ export default function KoleksiPage() {
     return () => {
       ScrollTrigger.getAll().forEach((t) => t.kill())
     }
-  }, [artifacts.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Kartu punya opacity 0 bawaan (buat reveal saat scroll). Hasil filter bisa
+  // berubah TANPA user nge-scroll lagi, jadi kartu baru harus dimunculkan
+  // langsung — kalau nunggu ScrollTrigger, kartunya bisa nyangkut invisible.
+  // Dilewati saat render pertama supaya animasi intro tetap jalan.
+  const firstRender = useRef(true)
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false
+      return
+    }
+    gsap.set('.koleksi-card', { opacity: 1, y: 0, scale: 1 })
+  }, [activeCategory, query, artifacts.length])
 
   return (
     <>
@@ -183,10 +220,88 @@ export default function KoleksiPage() {
               paddingBottom: '0.5rem',
             }}
           >
-            {artifacts.length} Artefak Terindeks
+            {artifacts.length === allArtifacts.length
+              ? `${allArtifacts.length} Artefak Terindeks`
+              : `${artifacts.length} dari ${allArtifacts.length} Artefak`}
           </span>
         </div>
       </section>
+
+      {/* FILTER & PENCARIAN */}
+      <section
+        style={{
+          padding: '2rem 4rem',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
+        }}
+      >
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Cari nama artefak, bahan, jenis…"
+          aria-label="Cari artefak"
+          style={{
+            width: '100%',
+            maxWidth: '420px',
+            padding: '0.85rem 1.1rem',
+            border: '1px solid var(--border)',
+            borderRadius: '8px',
+            background: 'transparent',
+            color: 'var(--charcoal)',
+            fontFamily: "'DM Mono', monospace",
+            fontSize: '13px',
+          }}
+        />
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          {[{ label: `Semua (${allArtifacts.length})`, value: null }, ...categories.map(([cat, n]) => ({ label: `${cat} (${n})`, value: cat }))].map(
+            ({ label, value }) => {
+              const isActive = activeCategory === value
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setActiveCategory(value)}
+                  aria-pressed={isActive}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '999px',
+                    cursor: 'pointer',
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '11px',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    border: '1px solid var(--border)',
+                    background: isActive ? 'var(--charcoal)' : 'transparent',
+                    color: isActive ? 'var(--bone)' : 'var(--warm)',
+                    transition: 'background 0.2s, color 0.2s',
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            },
+          )}
+        </div>
+      </section>
+
+      {artifacts.length === 0 && (
+        <section
+          style={{
+            padding: '5rem 4rem',
+            textAlign: 'center',
+            fontFamily: "'DM Mono', monospace",
+            fontSize: '13px',
+            color: 'var(--warm)',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
+          Tidak ada artefak yang cocok dengan pencarian ini.
+        </section>
+      )}
 
       {/* COLLECTION GRID */}
       <section
