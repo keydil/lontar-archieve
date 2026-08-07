@@ -16,19 +16,12 @@ export default function ArsipPage() {
     <>
       {/* NAV */}
       <nav className="global-nav">
-        <Link
-          href="/"
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '12px',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            color: 'var(--charcoal)',
-            textDecoration: 'none',
-          }}
-        >
-          Arsip Lontar
-        </Link>
+        {/* Logo museum asli + link balik ke situs utama — lihat catatan
+            sama di src/app/koleksi/page.tsx. */}
+        <a href="https://museumtalagamanggung.com" style={{ display: 'flex', alignItems: 'center' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/logo-museum.png" alt="Museum Talaga Manggung" style={{ height: '34px', width: 'auto' }} />
+        </a>
         <ul>
           {navItems.map((item) => {
             const isActive = pathname?.startsWith(item.href)

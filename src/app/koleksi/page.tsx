@@ -101,19 +101,14 @@ export default function KoleksiPage() {
     <>
       {/* FIXED NAV — minimal */}
       <nav className="global-nav">
-        <Link
-          href="/"
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '10px',
-            letterSpacing: '0.25em',
-            textTransform: 'uppercase',
-            color: 'var(--charcoal)',
-            textDecoration: 'none',
-          }}
-        >
-          Arsip Lontar
-        </Link>
+        {/* Logo museum asli (bukan wordmark "Arsip Lontar") + link balik ke
+            situs utama — bagian ini cuma satu section interaktif dari
+            museumtalagamanggung.com, bukan "rumah" terpisah. Pakai <a>
+            biasa (bukan next/link) karena ini navigasi keluar domain. */}
+        <a href="https://museumtalagamanggung.com" style={{ display: 'flex', alignItems: 'center' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/logo-museum.png" alt="Museum Talaga Manggung" style={{ height: '34px', width: 'auto' }} />
+        </a>
         <ul>
           {NAV_ITEMS.map((item) => {
             const isActive =
@@ -144,8 +139,8 @@ export default function KoleksiPage() {
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <Link
-          href="/"
+        <a
+          href="https://museumtalagamanggung.com"
           className="koleksi-nav-back"
           style={{
             display: 'inline-flex',
@@ -165,7 +160,7 @@ export default function KoleksiPage() {
         >
           <span style={{ fontSize: '14px', lineHeight: 1 }}>←</span>
           Kembali ke Beranda
-        </Link>
+        </a>
 
         <div
           ref={headerRef}
@@ -497,8 +492,8 @@ export default function KoleksiPage() {
         >
           © 2025 Arsip Naskah Lontar — Digital Archive
         </span>
-        <Link
-          href="/"
+        <a
+          href="https://museumtalagamanggung.com"
           style={{
             fontSize: '11px',
             letterSpacing: '0.12em',
@@ -509,7 +504,7 @@ export default function KoleksiPage() {
           }}
         >
           Beranda ↗
-        </Link>
+        </a>
       </footer>
     </>
   )

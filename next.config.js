@@ -22,6 +22,17 @@ const nextConfig = {
         destination: '/admin/backup',
         permanent: true,
       },
+      // Situs ini sekarang cuma satu section (Koleksi + Arsip Naskah) dari
+      // museumtalagamanggung.com (Laravel), bukan "rumah" sendiri lagi —
+      // homepage lama (hero/splash) di src/app/page.tsx jadi vestigial.
+      // Dibiarkan ada (bukan dihapus) tapi gak lagi jadi tujuan navigasi;
+      // siapapun yang mendarat di "/" langsung (bookmark lama, link
+      // dibagikan, dsb.) diarahkan ke rumah yang sebenarnya.
+      {
+        source: '/',
+        destination: 'https://museumtalagamanggung.com',
+        permanent: true,
+      },
     ]
   },
 }
