@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation'
 import { useCMS } from '@/lib/cms'
 import { BackgroundOrnaments } from '@/components/koleksi/BackgroundOrnaments'
 import { Navbar } from '@/components/koleksi/Navbar'
-import { ArtifactGrid } from '@/components/koleksi/ArtifactGrid'
+import { ArtifactGrid, ArtifactGridSkeleton } from '@/components/koleksi/ArtifactGrid'
 import { Artifact as AIArtifact } from '@/components/koleksi/types'
 
 export default function KoleksiPage() {
   const router = useRouter()
-  const { data } = useCMS()
+  const { data, hydrated } = useCMS()
   const allArtifacts = data.koleksi
 
   const [activeCategory, setActiveCategory] = useState<string>('Semua')
@@ -91,12 +91,16 @@ export default function KoleksiPage() {
         />
 
         <main className="pb-12">
-          <ArtifactGrid
-            artifacts={visibleArtifacts}
-            onSelectArtifact={(item) => router.push(`/koleksi/${item.slug}`)}
-            onLoadMore={() => setVisibleCount((prev) => prev + 6)}
-            hasMore={hasMore}
-          />
+          {hydrated ? (
+            <ArtifactGrid
+              artifacts={visibleArtifacts}
+              onSelectArtifact={(item) => router.push(`/koleksi/${item.slug}`)}
+              onLoadMore={() => setVisibleCount((prev) => prev + 6)}
+              hasMore={hasMore}
+            />
+          ) : (
+            <ArtifactGridSkeleton />
+          )}
         </main>
       </div>
     </div>

@@ -124,3 +124,25 @@ export const ArtifactGrid: React.FC<ArtifactGridProps> = ({
         </div>
     );
 };
+
+// Tinggi kartu diacak dari preset tetap (bukan random tiap render) biar
+// pola masonry-nya gak "loncat" kalau komponen ini re-render sebelum data
+// aslinya kelar dimuat.
+const SKELETON_HEIGHTS = ['h-48', 'h-64', 'h-56', 'h-72', 'h-40', 'h-60', 'h-52', 'h-68'];
+
+export const ArtifactGridSkeleton: React.FC<{ count?: number }> = ({ count = 12 }) => {
+    return (
+        <div className="w-full max-w-7xl mx-auto px-4 py-6">
+            <div className="columns-2 sm:columns-3 lg:columns-4 gap-4 sm:gap-6 animate-pulse">
+                {Array.from({ length: count }).map((_, idx) => (
+                    <div
+                        key={idx}
+                        className="break-inside-avoid mb-4 sm:mb-6 rounded-sm bg-[#FFFDF9]/70 border border-[#E2DBD0] p-2"
+                    >
+                        <div className={`rounded-sm bg-[#E5DEC9] ${SKELETON_HEIGHTS[idx % SKELETON_HEIGHTS.length]}`} />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};

@@ -30,6 +30,10 @@ export default function KoleksiDetailPage() {
   const slug = params.slug as string
   const { data } = useCMS()
   const [artifact, setArtifact] = useState<Artifact | null>(null)
+  // Status eksplisit — "belum ketemu" beda sama "masih dicari". Tanpa ini,
+  // halaman selalu kedip nampilin "Artefak tidak ditemukan" sesaat sebelum
+  // fetch-nya kelar, karena artifact awalnya emang null.
+  const [status, setStatus] = useState<'loading' | 'found' | 'not-found'>('loading')
   const [langId, setLangId] = useState(true) // true = Indonesia, false = English
   const [activeMedia, setActiveMedia] = useState(0)
   const [showModel, setShowModel] = useState(false)
@@ -37,8 +41,15 @@ export default function KoleksiDetailPage() {
 
   useEffect(() => {
     let active = true
+    setStatus('loading')
     getKoleksiBySlug(slug).then((found) => {
-      if (active && found) setArtifact(found)
+      if (!active) return
+      if (found) {
+        setArtifact(found)
+        setStatus('found')
+      } else {
+        setStatus('not-found')
+      }
     })
     return () => { active = false }
   }, [slug])
@@ -68,7 +79,11 @@ export default function KoleksiDetailPage() {
     setTimeout(() => setCopiedLink(false), 2500)
   }
 
-  if (!artifact) {
+  if (status === 'loading') {
+    return <DetailSkeleton />
+  }
+
+  if (status === 'not-found' || !artifact) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-[#F8F5EC]">
         <p className="font-serif text-3xl font-black text-[#2C2825]">Artefak tidak ditemukan</p>
@@ -382,6 +397,50 @@ export default function KoleksiDetailPage() {
             Semua Koleksi ↗
           </Link>
         </footer>
+      </div>
+    </div>
+  )
+}
+
+// Skeleton nge-mirrorin bentuk kartu asli (bukan spinner generik) biar gak
+// ada lompatan layout pas data-nya kelar dimuat.
+function DetailSkeleton() {
+  return (
+    <div className="min-h-screen relative bg-[#F8F5EC]">
+      <BackgroundOrnaments />
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 py-6 animate-pulse">
+        <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#E2DBD0]">
+          <div className="h-4 w-56 rounded-full bg-[#E8E2D3]" />
+          <div className="h-7 w-32 rounded-full bg-[#E8E2D3]" />
+        </div>
+
+        <div className="bg-white border border-[#DCD3C1] rounded-sm shadow-sm overflow-hidden flex flex-col lg:flex-row">
+          <div className="w-full lg:w-1/2 bg-[#F3EFE4] border-b lg:border-b-0 lg:border-r border-[#E0D7C6] p-5 sm:p-6 min-h-[420px] flex flex-col justify-between">
+            <div className="h-7 w-40 rounded-full bg-[#E8E2D3]" />
+            <div className="flex-1 my-2 rounded-sm bg-[#E8E2D3]" />
+            <div className="h-6 w-64 mx-auto rounded-full bg-[#E8E2D3]" />
+          </div>
+
+          <div className="w-full lg:w-1/2 p-5 sm:p-6 md:p-8">
+            <div className="h-4 w-40 rounded-full bg-[#E8E2D3] mb-3" />
+            <div className="h-9 w-3/4 rounded-sm bg-[#E8E2D3] mb-5" />
+            <div className="grid grid-cols-2 gap-3 mb-5 p-4 bg-[#F5F1E6] border border-[#E0D7C6] rounded-sm">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-10 rounded-sm bg-[#E8E2D3]" />
+              ))}
+            </div>
+            <div className="space-y-2 mb-6">
+              <div className="h-3.5 w-full rounded-full bg-[#E8E2D3]" />
+              <div className="h-3.5 w-full rounded-full bg-[#E8E2D3]" />
+              <div className="h-3.5 w-2/3 rounded-full bg-[#E8E2D3]" />
+            </div>
+            <div className="space-y-2.5 border-t border-[#E2DBD0] pt-4">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-4 w-full rounded-full bg-[#E8E2D3]" />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
