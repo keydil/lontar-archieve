@@ -10,4 +10,5 @@ export interface Artifact {
   type?: string;
   category?: string;
   description_id?: string;
+  modelUrl?: string;
 }

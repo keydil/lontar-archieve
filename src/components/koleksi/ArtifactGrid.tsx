@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Box } from 'lucide-react';
 import { Artifact } from './types';
 
 interface ArtifactGridProps {
@@ -65,6 +66,12 @@ export const ArtifactGrid: React.FC<ArtifactGridProps> = ({
                                     referrerPolicy="no-referrer"
                                     className="w-full h-auto block rounded-sm transition-transform duration-500 group-hover:scale-105"
                                 />
+                                {item.modelUrl && (
+                                    <span className="absolute top-2.5 right-2.5 z-30 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#2C2825]/90 text-[#E8D099] backdrop-blur-sm shadow-sm">
+                                        <Box className="w-3 h-3 shrink-0 text-[#FFD966] animate-pulse" />
+                                        <span className="font-mono text-[10px] font-bold tracking-wider leading-[1] translate-y-px">3D</span>
+                                    </span>
+                                )}
                                 <div
                                     className={`absolute inset-x-0 bottom-0 z-20 transition-all duration-300 ease-out flex flex-col justify-end ${isHovered
                                             ? 'bg-gradient-to-t from-[#A68641] via-[#B89851] to-[#C8A861]/95 p-3 shadow-lg'
