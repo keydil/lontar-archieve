@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Artifact, MediaItem } from '@/data/koleksi'
-import { uid, slugify } from '@/lib/cms'
+import { uid, slugify, useCMS } from '@/lib/cms'
 import { Field, Input, Textarea, Select, Button, Card, SectionTitle, ImageUpload, ModelUpload } from './AdminUI'
 import QRCodeButton from './QRCodeButton'
 import { toast } from './Feedback'
@@ -19,7 +19,7 @@ export function blankKoleksi(): KoleksiForm {
     name: '',
     year: '',
     type: '',
-    category: 'Arca',
+    category: '',
     material: '',
     dimensions: '',
     artist: 'Unknown',
@@ -51,6 +51,19 @@ export default function KoleksiEditor({
   const nameInputRef = useRef<HTMLInputElement>(null)
   const slugInputRef = useRef<HTMLInputElement>(null)
   const patch = (p: Partial<KoleksiForm>) => setItem((i) => ({ ...i, ...p }))
+
+  // Kategori resmi diambil dari kategori yang beneran udah dipakai di data
+  // (bukan daftar tetap) — biar gak pernah nyimpang dari taksonomi asli
+  // yang dipakai buat filter pill di halaman publik.
+  const { data } = useCMS()
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>()
+    for (const a of data.koleksi) {
+      if (a.category) set.add(a.category)
+    }
+    if (item.category) set.add(item.category)
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'id'))
+  }, [data.koleksi, item.category])
 
   // Lapor ke parent kalau ada perubahan belum disimpan (dipakai buat
   // nge-warn sebelum pindah tab/halaman).
@@ -132,15 +145,17 @@ export default function KoleksiEditor({
           <Input value={item.year} onChange={(e) => patch({ year: e.target.value })} placeholder="Abad ke-14" />
         </Field>
         <Field label="Kategori">
-          <select
+          <Input
+            list="kategori-koleksi-list"
             value={item.category}
             onChange={(e) => patch({ category: e.target.value })}
-            style={{ width: '100%', fontFamily: mono, fontSize: '14px', padding: '0.75rem 0.9rem', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--bone)', color: 'var(--charcoal)' }}
-          >
-            {['Arca', 'Senjata Pusaka', 'Karya Seni', 'Senjata Berledak', 'Batu', 'Lainnya'].map(c => (
-              <option key={c} value={c}>{c}</option>
+            placeholder="Arca Perunggu"
+          />
+          <datalist id="kategori-koleksi-list">
+            {categoryOptions.map((c) => (
+              <option key={c} value={c} />
             ))}
-          </select>
+          </datalist>
         </Field>
         <Field label="Jenis (Type)">
           <Input value={item.type} onChange={(e) => patch({ type: e.target.value })} placeholder="Arca Perunggu / Keris / Genta" />
