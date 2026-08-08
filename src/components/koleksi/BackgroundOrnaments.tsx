@@ -107,7 +107,7 @@ export const BackgroundOrnaments: React.FC = () => {
             {/* ========================================================= */}
             {/* 1. SISI KANAN ATAS (PANJANG 1/3 LAYAR DARI ATAS KE BAWAH) */}
             {/* ========================================================= */}
-            <div className="absolute top-0 right-0 h-[55vh] sm:h-[65vh] w-48 sm:w-80 md:w-96 pointer-events-none opacity-85 drop-shadow-xs">
+            <div className="absolute top-0 right-0 h-[55vh] sm:h-[65vh] w-48 sm:w-80 md:w-96 pointer-events-none opacity-85 drop-shadow-sm">
                 <svg viewBox="0 0 280 700" className="w-full h-full preserve-3d transform scale-x-[-1]" preserveAspectRatio="none">
                     <use href="#side-border-ornament" />
                 </svg>
@@ -116,7 +116,7 @@ export const BackgroundOrnaments: React.FC = () => {
             {/* ========================================================= */}
             {/* 2. SISI KIRI BAWAH (PANJANG 1/3 LAYAR DARI BAWAH KE ATAS) */}
             {/* ========================================================= */}
-            <div className="absolute bottom-10 left-0 h-[55vh] sm:h-[65vh] w-48 sm:w-80 md:w-96 pointer-events-none opacity-85 drop-shadow-xs">
+            <div className="absolute bottom-10 left-0 h-[55vh] sm:h-[65vh] w-48 sm:w-80 md:w-96 pointer-events-none opacity-85 drop-shadow-sm">
                 <svg viewBox="0 0 280 700" className="w-full h-full preserve-3d transform scale-y-[-1]" preserveAspectRatio="none">
                     <use href="#side-border-ornament" />
                 </svg>

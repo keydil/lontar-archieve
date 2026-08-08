@@ -36,7 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="w-full sm:w-auto flex justify-start sm:absolute sm:left-0 sm:top-1/2 sm:-translate-y-1/2 mb-3 sm:mb-0">
                     <button
                         onClick={onPortalUtamaClick || (() => window.location.href = 'https://museumtalagamanggung.com')}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-full bg-white/80 hover:bg-white border border-[#C5A86A]/40 text-[#2C2825] hover:text-[#B08C42] text-xs sm:text-sm font-serif font-semibold shadow-2xs transition-all group cursor-pointer"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-full bg-white/80 hover:bg-white border border-[#C5A86A]/40 text-[#2C2825] hover:text-[#B08C42] text-xs sm:text-sm font-serif font-semibold shadow-sm transition-all group cursor-pointer"
                     >
                         <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#B08C42] transition-transform group-hover:-translate-x-1" />
                         <span>Portal Utama</span>
@@ -50,7 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <img
                             src="/images/logo-museum.png"
                             alt="Museum Talaga Manggung"
-                            className="h-10 sm:h-12 md:h-14 w-auto object-contain filter drop-shadow-xs"
+                            className="h-10 sm:h-12 md:h-14 w-auto object-contain filter drop-shadow-sm"
                         />
                     </a>
                 </div>
@@ -61,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                     onClick={() => setActiveTab('artefak')}
                     className={`relative px-4 py-2 text-base sm:text-xl md:text-2xl font-serif tracking-wide transition-all cursor-pointer whitespace-nowrap ${activeTab === 'artefak'
-                            ? 'text-[#8A6D3B] font-bold drop-shadow-xs'
+                            ? 'text-[#8A6D3B] font-bold drop-shadow-sm'
                             : 'text-[#2C2825] font-semibold hover:text-[#B08C42]'
                         }`}
                 >
@@ -72,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                     onClick={() => setActiveTab('naskah')}
                     className={`relative px-4 py-2 text-base sm:text-xl md:text-2xl font-serif tracking-wide transition-all cursor-pointer whitespace-nowrap ${activeTab === 'naskah'
-                            ? 'text-[#8A6D3B] font-bold drop-shadow-xs'
+                            ? 'text-[#8A6D3B] font-bold drop-shadow-sm'
                             : 'text-[#2C2825] font-semibold hover:text-[#B08C42]'
                         }`}
                 >
@@ -88,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Cari Koleksi atau Naskah..."
-                    className="w-full bg-white/90 backdrop-blur-xs border border-[#E0D7C8] rounded-md py-2.5 pl-10 sm:pl-11 pr-4 sm:pr-5 text-xs sm:text-sm md:text-base text-[#2C2825] placeholder-[#A0988A] outline-none focus:border-[#B08C42] focus:ring-1 focus:ring-[#B08C42]/30 transition-all shadow-2xs"
+                    className="w-full bg-white/90 backdrop-blur-sm border border-[#E0D7C8] rounded-md py-2.5 pl-10 sm:pl-11 pr-4 sm:pr-5 text-xs sm:text-sm md:text-base text-[#2C2825] placeholder-[#A0988A] outline-none focus:border-[#B08C42] focus:ring-1 focus:ring-[#B08C42]/30 transition-all shadow-sm"
                 />
                 <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#B0A798] absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2" />
             </div>
@@ -103,7 +103,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}
                                 className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all cursor-pointer ${isSelected
-                                        ? 'bg-[#E5D2A8] text-[#2A2316] font-bold border border-[#C5A86A] shadow-xs'
+                                        ? 'bg-[#E5D2A8] text-[#2A2316] font-bold border border-[#C5A86A] shadow-sm'
                                         : 'bg-[#ECE5D6]/90 text-[#4A433A] hover:bg-[#E0D7C4]'
                                     }`}
                             >

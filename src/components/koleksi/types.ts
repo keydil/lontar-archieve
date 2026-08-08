@@ -7,7 +7,6 @@ export interface Artifact {
   era: string;
   material: string;
   imageUrl: string;
-  featured?: boolean;
   type?: string;
   category?: string;
   description_id?: string;

@@ -15,7 +15,7 @@ export default function KoleksiPage() {
 
   const [activeCategory, setActiveCategory] = useState<string>('Semua')
   const [query, setQuery] = useState<string>('')
-  const [visibleCount, setVisibleCount] = useState<number>(6)
+  const [visibleCount, setVisibleCount] = useState<number>(12)
 
   // Ambil daftar kategori unik dari CMS. SENGAJA cuma `category` (taksonomi
   // resmi, 10 nilai) — bukan `material`, yang deskripsi bahan per-item dan
@@ -43,16 +43,16 @@ export default function KoleksiPage() {
     })
   }, [allArtifacts, activeCategory, query])
 
-  // Map to AI Studio Artifact format
+  // Map ke bentuk yang dipakai ArtifactGrid (grid rata, gak ada konsep
+  // "featured"/spotlight lagi — lihat catatan di ArtifactGrid.tsx)
   const mappedArtifacts: AIArtifact[] = useMemo(() => {
-    return filteredArtifacts.map((a, idx) => ({
+    return filteredArtifacts.map((a) => ({
       id: a.slug,
       slug: a.slug,
       name: a.name,
       era: a.year || 'Abad ke-13 - ke-14 M',
       material: a.material || 'Perunggu',
       imageUrl: a.thumbnail || (a.media && a.media[0]?.url) || '/images/koleksi/default.jpg',
-      featured: idx === 0, // Spotlight first item in Bento Grid
       type: a.type,
       category: a.category,
       description_id: a.description_id,
