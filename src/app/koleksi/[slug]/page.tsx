@@ -1,12 +1,25 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import gsap from 'gsap'
-import { getKoleksiBySlug } from '@/lib/cms'
+import {
+  ArrowLeft,
+  ChevronRight,
+  Share2,
+  Check,
+  Clock,
+  Layers,
+  Scale,
+  Compass,
+  Box,
+  Image as ImageIcon,
+  BookOpen,
+} from 'lucide-react'
+import { getKoleksiBySlug, useCMS } from '@/lib/cms'
 import type { Artifact } from '@/data/koleksi'
+import { BackgroundOrnaments } from '@/components/koleksi/BackgroundOrnaments'
 
 const ModelViewer = dynamic(() => import('@/components/ModelViewer'), {
   ssr: false,
@@ -15,12 +28,12 @@ const ModelViewer = dynamic(() => import('@/components/ModelViewer'), {
 export default function KoleksiDetailPage() {
   const params = useParams()
   const slug = params.slug as string
+  const { data } = useCMS()
   const [artifact, setArtifact] = useState<Artifact | null>(null)
   const [langId, setLangId] = useState(true) // true = Indonesia, false = English
-  // Foto dulu: indeks foto yang sedang dilihat. showModel=true baru
-  // menampilkan model 3D (hanya untuk artefak yang punya .glb).
   const [activeMedia, setActiveMedia] = useState(0)
   const [showModel, setShowModel] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -30,77 +43,40 @@ export default function KoleksiDetailPage() {
     return () => { active = false }
   }, [slug])
 
-  // GSAP reveal for metadata panel
   useEffect(() => {
     if (!artifact) return
-
-    const tl = gsap.timeline({ delay: 0.5 })
-    tl.to('.detail-back', {
-      opacity: 1,
-      x: 0,
-      duration: 0.8,
-      ease: 'power3.out',
-    })
-      .to(
-        '.detail-name',
-        { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' },
-        '-=0.4'
-      )
-      .to(
-        '.detail-artist',
-        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
-        '-=0.6'
-      )
-      .to(
-        '.detail-desc',
-        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
-        '-=0.4'
-      )
-      .to(
-        '.detail-meta-item',
-        { opacity: 1, y: 0, duration: 0.6, stagger: 0.08, ease: 'power3.out' },
-        '-=0.4'
-      )
+    setActiveMedia(0)
+    setShowModel(false)
+    setCopiedLink(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [artifact])
+
+  // Rekomendasi: prioritaskan kategori yang sama, isi sisanya dari koleksi
+  // lain kalau kategori ini tipis — dan jujur dilabel "Koleksi Lainnya",
+  // bukan "Terkait", biar gak menyesatkan kayak bug sebelumnya.
+  const related = useMemo(() => {
+    if (!artifact) return []
+    const rest = data.koleksi.filter((a) => a.slug !== artifact.slug)
+    const sameCategory = rest.filter((a) => a.category === artifact.category)
+    const others = rest.filter((a) => a.category !== artifact.category)
+    return [...sameCategory, ...others].slice(0, 3)
+  }, [data.koleksi, artifact])
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href)
+    setCopiedLink(true)
+    setTimeout(() => setCopiedLink(false), 2500)
+  }
 
   if (!artifact) {
     return (
-      <div
-        style={{
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '2rem',
-          background: 'var(--bone)',
-        }}
-      >
-        <p
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '30px',
-            fontWeight: 900,
-            color: 'var(--charcoal)',
-          }}
-        >
-          Artefak tidak ditemukan
-        </p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-[#F8F5EC]">
+        <p className="font-serif text-3xl font-black text-[#2C2825]">Artefak tidak ditemukan</p>
         <Link
           href="/koleksi"
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '11px',
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            color: 'var(--warm)',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-          }}
+          className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.18em] uppercase text-[#8A6D3B] hover:text-[#2C2825] transition-colors"
         >
-          <span style={{ fontSize: '14px' }}>←</span>
+          <ArrowLeft className="w-3.5 h-3.5" />
           Kembali ke Koleksi
         </Link>
       </div>
@@ -110,485 +86,303 @@ export default function KoleksiDetailPage() {
   const media = artifact.media ?? []
   const has3D = Boolean(artifact.modelUrl)
   const current = media[activeMedia]
-  // strip hanya berguna kalau ada lebih dari satu hal untuk dilihat
-  const hasStrip = media.length + (has3D ? 1 : 0) > 1
-  // artefak tanpa foto tapi punya 3D -> langsung tampilkan 3D
   const show3D = showModel || (has3D && media.length === 0)
 
   return (
-    <>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          minHeight: '100vh',
-        }}
-        className="detail-layout"
-      >
-        {/* ============================================ */}
-        {/* LEFT — Galeri Foto (3D bila modelnya ada)    */}
-        {/* ============================================ */}
-        <div
-          style={{
-            position: 'relative',
-            height: '100vh',
-            borderRight: '1px solid var(--border)',
-            background:
-              'linear-gradient(180deg, rgba(200,169,110,0.04) 0%, rgba(240,237,230,1) 100%)',
-          }}
-        >
-          {/* Model 3D hanya di-mount kalau artefak ini benar-benar punya
-              file .glb. Sebagian besar koleksi baru berupa foto, jadi
-              WebGL tidak dinyalakan percuma. */}
-          {has3D && (
-            <div style={{ position: 'absolute', inset: 0, visibility: show3D ? 'visible' : 'hidden' }}>
-              <ModelViewer modelUrl={artifact.modelUrl!} rotation={artifact.modelRotation} />
-            </div>
-          )}
-
-          {/* Foto / video terpilih */}
-          {!show3D && current && (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#1A1918',
-              }}
+    <div className="min-h-screen relative bg-[#F8F5EC]">
+      <BackgroundOrnaments />
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 py-6">
+        {/* Breadcrumb & Bagikan */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-[#E2DBD0]">
+          <div className="flex items-center gap-2 text-xs md:text-sm text-[#6B6356] min-w-0">
+            <Link
+              href="/koleksi"
+              className="flex items-center gap-1.5 text-[#8A6D3B] hover:text-[#2C2825] font-semibold transition-colors shrink-0"
             >
-              {current.type === 'video' ? (
-                <video src={current.url} controls style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={current.url}
-                  alt={current.caption || artifact.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                />
-              )}
-              {current.caption && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: hasStrip ? '7.5rem' : '1.5rem',
-                    left: 0,
-                    right: 0,
-                    padding: '0.75rem 1.5rem',
-                    color: 'var(--bone)',
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: '11px',
-                    letterSpacing: '0.05em',
-                    background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
-                  }}
-                >
-                  {current.caption}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Belum ada foto maupun 3D */}
-          {!show3D && !current && (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.75rem',
-                color: 'var(--warm)',
-                fontFamily: "'DM Mono', monospace",
-              }}
-            >
-              <span style={{ fontSize: '30px', opacity: 0.5 }}>&#9707;</span>
-              <span style={{ fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-                Dokumentasi belum tersedia
-              </span>
-            </div>
-          )}
-
-          {/* Strip thumbnail — muncul kalau ada lebih dari satu tampilan */}
-          {hasStrip && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 6,
-                display: 'flex',
-                gap: '8px',
-                padding: '1rem 1.5rem',
-                overflowX: 'auto',
-                background: 'linear-gradient(transparent, rgba(17,17,16,0.55))',
-              }}
-            >
-              {media.map((m, idx) => (
-                <button
-                  key={m.id}
-                  onClick={() => { setShowModel(false); setActiveMedia(idx) }}
-                  title={m.caption || 'Foto ' + (idx + 1)}
-                  style={{
-                    width: '64px',
-                    height: '64px',
-                    flexShrink: 0,
-                    border: !show3D && activeMedia === idx ? '3px solid var(--bone)' : '1px solid rgba(240,237,230,0.4)',
-                    background: '#1A1918',
-                    color: 'var(--bone)',
-                    cursor: 'pointer',
-                    overflow: 'hidden',
-                    padding: 0,
-                  }}
-                >
-                  {m.type === 'video' && !m.thumbnail ? (
-                    <span style={{ fontSize: '18px' }}>&#9654;</span>
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={m.thumbnail || m.url}
-                      alt={m.caption || 'Foto ' + (idx + 1)}
-                      loading="lazy"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  )}
-                </button>
-              ))}
-
-              {/* 3D ditaruh paling belakang — pelengkap, bukan yang utama */}
-              {has3D && (
-                <button
-                  onClick={() => setShowModel(true)}
-                  title="Lihat model 3D"
-                  style={{
-                    width: '64px',
-                    height: '64px',
-                    flexShrink: 0,
-                    border: show3D ? '3px solid var(--bone)' : '1px solid rgba(240,237,230,0.4)',
-                    background: '#1A1918',
-                    color: 'var(--bone)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '2px',
-                    padding: 0,
-                  }}
-                >
-                  <span style={{ fontSize: '17px' }}>&#9707;</span>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '8px', letterSpacing: '0.1em' }}>3D</span>
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Watermark */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: hasStrip ? '6rem' : '1.5rem',
-              left: '1.5rem',
-              zIndex: 5,
-              pointerEvents: 'none',
-            }}
-          >
-            <span
-              style={{
-                fontSize: '10px',
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: 'rgba(17,17,16,0.35)',
-                fontFamily: "'DM Mono', monospace",
-              }}
-            >
-              {show3D ? 'Model 3D' : media.length + ' foto'} &mdash; {artifact.slug}
-            </span>
+              <ArrowLeft className="w-4 h-4" />
+              <span>Kembali ke Koleksi</span>
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-[#B0A798] shrink-0" />
+            <span className="text-[#4A433A] shrink-0">{artifact.category}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-[#B0A798] shrink-0" />
+            <span className="font-semibold text-[#2C2825] truncate">{artifact.name}</span>
           </div>
+
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#EFECE1] hover:bg-[#E2DBD0] text-[#4A433A] rounded-full text-xs font-semibold transition-colors border border-[#DCD3C1] cursor-pointer shrink-0"
+          >
+            {copiedLink ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-green-700" />
+                <span className="text-green-800">Tautan Tersalin!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Bagikan Artefak</span>
+              </>
+            )}
+          </button>
         </div>
 
-        {/* ============================================ */}
-        {/* RIGHT — Metadata Panel                       */}
-        {/* ============================================ */}
-        <div
-          style={{
-            height: '100vh',
-            overflowY: 'auto',
-            padding: '3rem',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-          className="detail-panel"
-        >
-          {/* Back link */}
-          <Link
-            href="/koleksi"
-            className="detail-back"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              fontFamily: "'DM Mono', monospace",
-              fontSize: '11px',
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              color: 'var(--warm)',
-              textDecoration: 'none',
-              marginBottom: '3rem',
-              opacity: 0,
-              transform: 'translateX(-20px)',
-              transition: 'color 0.3s ease',
-            }}
-          >
-            <span style={{ fontSize: '14px', lineHeight: 1 }}>←</span>
-            Kembali ke Koleksi
-          </Link>
+        {/* Kartu Utama */}
+        <div className="bg-white border border-[#DCD3C1] rounded-sm shadow-sm overflow-hidden flex flex-col lg:flex-row">
+          {/* Panggung Visual */}
+          <div className="w-full lg:w-1/2 bg-[#F3EFE4] border-b lg:border-b-0 lg:border-r border-[#E0D7C6] p-5 sm:p-6 flex flex-col justify-between relative min-h-[420px]">
+            <div className="w-full flex items-center justify-end gap-2 mb-4 flex-wrap">
+              {has3D ? (
+                <div className="flex items-center gap-1 bg-[#E2D8C3] p-1 rounded-full border border-[#D0C4AC]">
+                  <button
+                    onClick={() => setShowModel(false)}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${!show3D ? 'bg-[#2C2825] text-white shadow-sm' : 'text-[#52493E] hover:text-[#1A1816]'
+                      }`}
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>Foto</span>
+                  </button>
+                  <button
+                    onClick={() => setShowModel(true)}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${show3D ? 'bg-[#8A6D3B] text-white shadow-sm' : 'text-[#52493E] hover:text-[#1A1816]'
+                      }`}
+                  >
+                    <Box className="w-3.5 h-3.5 text-[#FFD966]" />
+                    <span>Model 3D</span>
+                  </button>
+                </div>
+              ) : (
+                <span className="text-xs text-[#8A8172] italic font-serif">Foto Dokumentasi 2D</span>
+              )}
+            </div>
 
-          {/* Artifact Name */}
-          <h1
-            className="detail-name"
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 'clamp(32px, 4vw, 56px)',
-              fontWeight: 900,
-              lineHeight: 1.05,
-              letterSpacing: '-0.02em',
-              color: 'var(--charcoal)',
-              marginBottom: '1rem',
-              opacity: 0,
-              transform: 'translateY(25px)',
-            }}
-          >
-            {artifact.name}
-          </h1>
+            <div className="relative flex-1 my-2 min-h-[260px]">
+              {has3D && (
+                <div className={`absolute inset-0 ${show3D ? 'visible' : 'invisible'}`}>
+                  <ModelViewer modelUrl={artifact.modelUrl!} rotation={artifact.modelRotation} />
+                </div>
+              )}
 
-          {/* Artist + Year + Country */}
-          <div
-            className="detail-artist"
-            style={{
-              display: 'flex',
-              gap: '1.5rem',
-              alignItems: 'baseline',
-              marginBottom: '2.5rem',
-              paddingBottom: '2rem',
-              borderBottom: '1px solid var(--border)',
-              opacity: 0,
-              transform: 'translateY(15px)',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: '13px',
-                letterSpacing: '0.06em',
-                color: 'var(--charcoal)',
-              }}
-            >
-              {artifact.artist}
-            </span>
-            <span
-              style={{
-                fontSize: '11px',
-                letterSpacing: '0.12em',
-                color: 'var(--warm)',
-                fontFamily: "'DM Mono', monospace",
-              }}
-            >
-              {artifact.year}
-            </span>
-            <span
-              style={{
-                fontSize: '11px',
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'var(--warm)',
-                fontFamily: "'DM Mono', monospace",
-              }}
-            >
-              {artifact.country}
-            </span>
+              {!show3D && (
+                current ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    {current.type === 'video' ? (
+                      <video
+                        src={current.url}
+                        controls
+                        className="w-full h-full object-contain rounded-sm bg-black"
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={current.url}
+                        alt={current.caption || artifact.name}
+                        referrerPolicy="no-referrer"
+                        className="max-h-full max-w-full object-contain drop-shadow-lg rounded-sm"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#8A6D3B]">
+                    <span className="text-3xl opacity-50">&#9707;</span>
+                    <span className="font-mono text-[11px] tracking-[0.2em] uppercase">
+                      Dokumentasi belum tersedia
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+
+            {!show3D && current?.caption && (
+              <p className="text-center text-xs font-mono tracking-wide text-[#8A8172] mb-2">
+                {current.caption}
+              </p>
+            )}
+
+            {!show3D && media.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-1 mb-2">
+                {media.map((m, idx) => (
+                  <button
+                    key={m.id}
+                    onClick={() => setActiveMedia(idx)}
+                    title={m.caption || `Foto ${idx + 1}`}
+                    className={`w-14 h-14 shrink-0 rounded-sm overflow-hidden border-2 transition-colors cursor-pointer ${activeMedia === idx ? 'border-[#8A6D3B]' : 'border-transparent'
+                      }`}
+                  >
+                    {m.type === 'video' && !m.thumbnail ? (
+                      <span className="w-full h-full flex items-center justify-center bg-[#1A1816] text-white text-sm">
+                        &#9654;
+                      </span>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={m.thumbnail || m.url}
+                        alt=""
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="w-full text-center mt-1">
+              {show3D ? (
+                <span className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E8D099]/30 border border-[#B09971]/50 text-[#6B501F] text-xs font-semibold">
+                  <Box className="w-3.5 h-3.5 text-[#8A6D3B]" />
+                  Model 3D Interaktif — drag buat putar, scroll buat zoom
+                </span>
+              ) : has3D ? (
+                <span className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E8D099]/30 border border-[#B09971]/50 text-[#6B501F] text-xs font-semibold">
+                  <Box className="w-3.5 h-3.5 text-[#8A6D3B]" />
+                  Tampilan 3D Interaktif Tersedia untuk Publik
+                </span>
+              ) : (
+                <span className="text-xs text-[#8A8172]">
+                  Dokumentasi Resmi Museum Talaga Manggung
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Description with language toggle */}
-          <div
-            className="detail-desc"
-            style={{
-              marginBottom: '2.5rem',
-              opacity: 0,
-              transform: 'translateY(15px)',
-            }}
-          >
-            {/* Language Toggle */}
-            <div
-              style={{
-                display: 'flex',
-                gap: '0.5rem',
-                marginBottom: '1.25rem',
-              }}
-            >
+          {/* Panel Info */}
+          <div className="w-full lg:w-1/2 p-5 sm:p-6 md:p-8">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <span className="text-xs font-bold tracking-wider uppercase text-[#8A6D3B]">
+                {artifact.category} • Museum Talaga Manggung
+              </span>
+              {has3D && (
+                <span className="px-2.5 py-0.5 rounded-full bg-[#2C2825] text-[#FFD966] text-[10px] font-bold border border-[#FFD966]/40 inline-flex items-center gap-1">
+                  <Box className="w-3 h-3 text-[#FFD966]" />
+                  <span>3D</span>
+                </span>
+              )}
+            </div>
+
+            <h1 className="font-serif font-bold text-3xl md:text-4xl text-[#2C2825] leading-tight mb-4">
+              {artifact.name}
+            </h1>
+
+            {/* Grid metadata berikon */}
+            <div className="grid grid-cols-2 gap-3 mb-5 p-4 bg-[#F5F1E6] border border-[#E0D7C6] rounded-sm text-xs md:text-sm">
+              <div className="flex items-center gap-2.5 text-[#3D3730]">
+                <Clock className="w-4 h-4 text-[#8A6D3B] shrink-0" />
+                <div>
+                  <span className="block text-[10px] text-[#8A8172] uppercase font-medium">Era</span>
+                  <span className="font-semibold">{artifact.year}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 text-[#3D3730]">
+                <Layers className="w-4 h-4 text-[#8A6D3B] shrink-0" />
+                <div>
+                  <span className="block text-[10px] text-[#8A8172] uppercase font-medium">Material</span>
+                  <span className="font-semibold">{artifact.material}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 text-[#3D3730]">
+                <Scale className="w-4 h-4 text-[#8A6D3B] shrink-0" />
+                <div>
+                  <span className="block text-[10px] text-[#8A8172] uppercase font-medium">Dimensi</span>
+                  <span className="font-semibold">{artifact.dimensions}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 text-[#3D3730]">
+                <Compass className="w-4 h-4 text-[#8A6D3B] shrink-0" />
+                <div>
+                  <span className="block text-[10px] text-[#8A8172] uppercase font-medium">Pengrajin / Asal</span>
+                  <span className="font-semibold">{artifact.artist}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Toggle bahasa + deskripsi */}
+            <div className="flex gap-2 mb-3">
               <button
                 onClick={() => setLangId(true)}
-                style={{
-                  fontFamily: "'DM Mono', monospace",
-                  fontSize: '11px',
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  padding: '0.45rem 0.85rem',
-                  border: '1px solid var(--border)',
-                  background: langId ? 'var(--charcoal)' : 'transparent',
-                  color: langId ? 'var(--bone)' : 'var(--warm)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
+                className={`font-mono text-[11px] tracking-[0.18em] uppercase px-3 py-1.5 border border-[#DCD3C1] transition-colors cursor-pointer ${langId ? 'bg-[#2C2825] text-[#F8F5EC]' : 'text-[#8A6D3B] hover:text-[#2C2825]'
+                  }`}
               >
                 ID
               </button>
               <button
                 onClick={() => setLangId(false)}
-                style={{
-                  fontFamily: "'DM Mono', monospace",
-                  fontSize: '11px',
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  padding: '0.45rem 0.85rem',
-                  border: '1px solid var(--border)',
-                  background: !langId ? 'var(--charcoal)' : 'transparent',
-                  color: !langId ? 'var(--bone)' : 'var(--warm)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
+                className={`font-mono text-[11px] tracking-[0.18em] uppercase px-3 py-1.5 border border-[#DCD3C1] transition-colors cursor-pointer ${!langId ? 'bg-[#2C2825] text-[#F8F5EC]' : 'text-[#8A6D3B] hover:text-[#2C2825]'
+                  }`}
               >
                 EN
               </button>
             </div>
-
-            <p
-              style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: '15px',
-                lineHeight: 1.9,
-                color: 'var(--warm)',
-                maxWidth: '480px',
-              }}
-            >
+            <p className="text-sm md:text-base text-[#4A433A] leading-relaxed mb-6">
               {langId ? artifact.description_id : artifact.description_en}
             </p>
-          </div>
 
-          {/* Metadata List */}
-          <div
-            style={{
-              borderTop: '1px solid var(--border)',
-              paddingTop: '2rem',
-              marginBottom: '2.5rem',
-            }}
-          >
-            {[
-              { label: 'Lokasi', value: artifact.address },
-              { label: 'Jenis', value: artifact.type },
-              { label: 'Material', value: artifact.material },
-              { label: 'Dimensi', value: artifact.dimensions },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="detail-meta-item"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'baseline',
-                  padding: '0.75rem 0',
-                  borderBottom: '1px solid var(--border)',
-                  opacity: 0,
-                  transform: 'translateY(10px)',
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: '11px',
-                    letterSpacing: '0.16em',
-                    textTransform: 'uppercase',
-                    color: 'var(--warm)',
-                  }}
-                >
-                  {item.label}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: '13px',
-                    color: 'var(--charcoal)',
-                    textAlign: 'right',
-                  }}
-                >
-                  {item.value}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
-
-          {/* Footer */}
-          <div
-            style={{
-              paddingTop: '2rem',
-              borderTop: '1px solid var(--border)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span
-              style={{
-                fontSize: '10px',
-                letterSpacing: '0.08em',
-                color: 'var(--warm)',
-                fontFamily: "'DM Mono', monospace",
-              }}
-            >
-              © 2025 Arsip Naskah Lontar
-            </span>
-            <Link
-              href="/koleksi"
-              style={{
-                fontSize: '11px',
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'var(--warm)',
-                fontFamily: "'DM Mono', monospace",
-                textDecoration: 'none',
-              }}
-            >
-              Semua Koleksi ↗
-            </Link>
+            {/* Lokasi & jenis */}
+            <div className="border-t border-[#E2DBD0] pt-4 space-y-2.5">
+              {[
+                { label: 'Jenis', value: artifact.type },
+                { label: 'Lokasi Penyimpanan', value: artifact.address },
+                { label: 'Ruang Pamer', value: artifact.location },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between gap-4 text-xs md:text-sm">
+                  <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-[#8A8172] shrink-0">
+                    {item.label}
+                  </span>
+                  <span className="text-[#2C2825] text-right">{item.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ============================================ */}
-      {/* Responsive CSS override for mobile           */}
-      {/* ============================================ */}
-      <style jsx>{`
-        @media (max-width: 768px) {
-          .detail-layout {
-            grid-template-columns: 1fr !important;
-          }
-          .detail-layout > div:first-child {
-            height: 50vh !important;
-            border-right: none !important;
-            border-bottom: 1px solid var(--border);
-          }
-          .detail-panel {
-            height: auto !important;
-            min-height: 50vh;
-          }
-        }
-      `}</style>
-    </>
+        {/* Koleksi lainnya */}
+        {related.length > 0 && (
+          <div className="mt-12 pt-8 border-t border-[#E2DBD0]">
+            <div className="flex items-center gap-2 mb-6">
+              <BookOpen className="w-5 h-5 text-[#8A6D3B]" />
+              <h3 className="font-serif font-bold text-xl text-[#2C2825]">Jelajahi Koleksi Lainnya</h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {related.map((item) => (
+                <Link
+                  key={item.slug}
+                  href={`/koleksi/${item.slug}`}
+                  className="group bg-white border border-[#DCD3C1] rounded-sm overflow-hidden hover:border-[#B09971] transition-all p-3 flex flex-col shadow-sm hover:shadow-md"
+                >
+                  <div className="h-32 w-full flex items-center justify-center bg-[#F3EFE4] rounded-sm mb-3 overflow-hidden p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.thumbnail || item.media?.[0]?.url || '/images/koleksi/default.jpg'}
+                      alt={item.name}
+                      referrerPolicy="no-referrer"
+                      className="max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <span className="text-[10px] uppercase font-bold text-[#8A6D3B] block">
+                    {item.category} • {item.year}
+                  </span>
+                  <h4 className="font-serif font-bold text-sm text-[#2C2825] group-hover:text-[#8A6D3B] transition-colors truncate">
+                    {item.name}
+                  </h4>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <footer className="mt-12 pt-6 border-t border-[#E2DBD0] flex justify-between items-center text-xs text-[#6B635B] font-medium">
+          <span>© 2023 Museum Talaga Manggung. All rights reserved.</span>
+          <Link
+            href="/koleksi"
+            className="font-mono text-[11px] tracking-[0.12em] uppercase text-[#8A6D3B] hover:text-[#2C2825] transition-colors"
+          >
+            Semua Koleksi ↗
+          </Link>
+        </footer>
+      </div>
+    </div>
   )
 }
