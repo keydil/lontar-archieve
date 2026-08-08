@@ -889,7 +889,14 @@ body {
 
   .music-toggle-global {
     bottom: 1rem;
-    left: 1rem;
+    right: 1rem;
+    left: auto;
+  }
+
+  /* Layar sempit — label yang muncul pas main dipangkas lebih pendek
+     biar pill-nya gak makan porsi gede-gede amat dari lebar layar. */
+  .music-toggle-global.is-playing .music-toggle-label {
+    max-width: 80px;
   }
 }
 
