@@ -96,9 +96,11 @@ export default function MusicToggle() {
   // tombol ini menutupi link sidebar (Lihat Situs / Keluar) di sana.
   if (pathname?.startsWith('/admin')) return null
 
+  const expanded = isPlaying && !isMuted
+
   return (
     <button
-      className="music-toggle-global"
+      className={`music-toggle-global${expanded ? ' is-playing' : ''}`}
       onClick={toggleMute}
       title={isMuted ? 'Nyalakan musik' : 'Matikan musik'}
     >
@@ -120,13 +122,11 @@ export default function MusicToggle() {
       <span className="music-toggle-label">
         {isMuted || !isPlaying ? 'SOUND OFF' : 'TARAWANGSA'}
       </span>
-      {isPlaying && !isMuted && (
-        <div className="music-bars">
-          <span className="music-bar" />
-          <span className="music-bar" />
-          <span className="music-bar" />
-        </div>
-      )}
+      <div className="music-bars">
+        <span className="music-bar" />
+        <span className="music-bar" />
+        <span className="music-bar" />
+      </div>
     </button>
   )
 }
