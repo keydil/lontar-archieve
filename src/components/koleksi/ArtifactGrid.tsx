@@ -39,7 +39,14 @@ export const ArtifactGrid: React.FC<ArtifactGridProps> = ({
 
     return (
         <div className="w-full max-w-7xl mx-auto px-4 py-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {/* Masonry (CSS columns) — bukan grid kotak seragam. Foto museum
+                rasionya macem-macem (landscape lebar, portrait tinggi kayak
+                Kujang); grid kotak seragam maksa semua foto ke satu bentuk
+                (motong kalau cover, nyisa ruang kosong kalau contain).
+                Masonry biarin tiap kartu tinggi sesuai foto aslinya sendiri —
+                juga otomatis beres buat kasus 1 item doang, gak ada slot
+                kaku yang bisa "kosong". */}
+            <div className="columns-2 sm:columns-3 lg:columns-4 gap-4 sm:gap-6">
                 {artifacts.map((item) => {
                     const isHovered = hoveredId === item.id;
                     return (
@@ -48,15 +55,15 @@ export const ArtifactGrid: React.FC<ArtifactGridProps> = ({
                             onClick={() => onSelectArtifact(item)}
                             onMouseEnter={() => setHoveredId(item.id)}
                             onMouseLeave={() => setHoveredId(null)}
-                            className="group cursor-pointer flex flex-col relative"
+                            className="group cursor-pointer break-inside-avoid mb-4 sm:mb-6 relative"
                         >
-                            <div className="relative overflow-hidden rounded-sm bg-[#EFECE1] border border-[#E2DBD0] shadow-sm aspect-[4/3] flex items-center justify-center p-2">
+                            <div className="relative overflow-hidden rounded-sm bg-[#EFECE1] border border-[#E2DBD0] shadow-sm">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={item.imageUrl}
                                     alt={item.name}
                                     referrerPolicy="no-referrer"
-                                    className="w-full h-full object-cover rounded-sm transition-transform duration-500 group-hover:scale-105"
+                                    className="w-full h-auto block rounded-sm transition-transform duration-500 group-hover:scale-105"
                                 />
                                 <div
                                     className={`absolute inset-x-0 bottom-0 z-20 transition-all duration-300 ease-out flex flex-col justify-end ${isHovered
