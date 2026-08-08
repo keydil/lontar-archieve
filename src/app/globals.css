@@ -1,8 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@300;400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Tema "museum gold" — khusus halaman Koleksi & Arsip (lihat
+   .museum-theme di src/app/koleksi/page.tsx & src/app/arsip/page.tsx).
+   SENGAJA gak ditaro di elemen global (body, h1-h4) — itu bakal nembus
+   ke semua halaman lain (admin panel, detail koleksi/arsip yang belum
+   diredesain) yang gak minta gaya ini sama sekali. */
+.museum-theme h1,
+.museum-theme h2,
+.museum-theme h3,
+.museum-theme h4,
+.museum-theme .font-serif-heading {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
 
 :root {
   --bone: #F0EDE6;

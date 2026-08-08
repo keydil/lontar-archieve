@@ -13,8 +13,9 @@ module.exports = {
         warm: '#8C8A85',
       },
       fontFamily: {
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
+        serif: ['Cormorant Garamond', 'Playfair Display', 'Georgia', 'serif'],
         mono: ['DM Mono', 'monospace'],
-        serif: ['Playfair Display', 'Georgia', 'serif'],
       },
     },
   },
