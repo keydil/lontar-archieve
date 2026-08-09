@@ -600,7 +600,7 @@ export function KoleksiModelUpload({
                   }}
                   className="px-5 py-2 bg-[#8A7144] hover:bg-[#725C34] text-white text-xs font-bold rounded-sm cursor-pointer transition-colors shadow-sm flex items-center justify-center gap-1.5"
                 >
-                  <span>🔒 Tutup & Kunci Posisi</span>
+                  <span>Tutup & Kunci Posisi</span>
                 </button>
               </div>
             </div>
