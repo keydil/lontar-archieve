@@ -90,36 +90,56 @@ function normalizeNaskah(raw: unknown): LontarNaskah {
 function normalizeKoleksi(raw: unknown): Artifact {
   // Sengaja dibaca sebagai bentuk mentah: baris lama bisa memuat tipe
   // media yang sudah tidak ada lagi di definisi Artifact (mis. 'glb').
-  const k = raw as Omit<Artifact, 'media'> & { images?: unknown; media?: LegacyMedia[] }
+  const k = raw as Omit<Artifact, 'media'> & { images?: unknown; media?: (LegacyMedia & Partial<MediaItem>)[] }
   const { images, media: rawMedia, ...rest } = k
 
   const media: MediaItem[] = []
   const seen = new Set<string>()
-  const push = (url: string, item?: LegacyMedia) => {
-    if (!url || seen.has(url)) return
-    seen.add(url)
+
+  for (const m of rawMedia ?? []) {
+    if (!m) continue
+    if ((m.type as string) === 'glb') {
+      if (m.thumbnail && !seen.has(m.thumbnail)) {
+        seen.add(m.thumbnail)
+        media.push({
+          id: m.id || uid('media'),
+          type: 'image',
+          url: m.thumbnail,
+          caption: m.caption,
+        })
+      }
+      continue
+    }
+
+    const primaryUrl = m.url || m.youtubeUrl || ''
+    const key = m.id || primaryUrl
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+
     media.push({
-      id: item?.id || uid('media'),
-      // `glb` lama diturunkan jadi gambar hanya bila ada thumbnail-nya;
-      // kalau tidak, entri itu dilewati (3D sudah diwakili modelUrl).
-      type: item?.type === 'video' ? 'video' : 'image',
-      url,
-      caption: item?.caption,
-      thumbnail: item?.thumbnail,
+      id: m.id || uid('media'),
+      type: m.type === 'video' ? 'video' : 'image',
+      url: m.url || '',
+      caption: m.caption,
+      thumbnail: m.thumbnail,
+      enabled: m.enabled !== false,
+      youtubeUrl: m.youtubeUrl,
+      videoSource: m.videoSource ?? (m.url && !m.youtubeUrl ? 'file' : 'youtube'),
     })
   }
 
-  for (const m of rawMedia ?? []) {
-    if (!m || typeof m.url !== 'string') continue
-    if (m.type === 'glb') {
-      if (m.thumbnail) push(m.thumbnail, { ...m, type: 'image', thumbnail: undefined })
-      continue
-    }
-    push(m.url, m)
-  }
   // Bentuk paling lama: images sebagai array string biasa.
   if (Array.isArray(images)) {
-    for (const url of images) if (typeof url === 'string') push(url)
+    for (const url of images) {
+      if (typeof url === 'string' && url && !seen.has(url)) {
+        seen.add(url)
+        media.push({
+          id: uid('media'),
+          type: 'image',
+          url,
+        })
+      }
+    }
   }
 
   // Kartu koleksi butuh gambar; pakai foto pertama kalau belum diset.

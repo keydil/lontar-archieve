@@ -1,12 +1,215 @@
 'use client'
 
-import { useState } from 'react'
+import dynamic from 'next/dynamic'
+import { useState, useEffect } from 'react'
 import { UploadCloud, Trash2, Box, RotateCw, Maximize2, Video, Play, X } from 'lucide-react'
 import { uploadImage, uploadModel, uploadVideo, getExternalTextureUris } from '@/lib/cms'
 import { getYouTubeEmbedUrl } from '@/lib/youtube'
 import { toast, confirmDialog } from '../Feedback'
 
+const ModelViewer = dynamic(() => import('@/components/ModelViewer'), {
+  ssr: false,
+})
+
 const slotInputCls = 'w-full p-2 bg-[#F9F6EE] border border-[#DCD3C1] rounded-sm text-xs text-[#2C2825] outline-none focus:border-[#8A7144]'
+
+// ============================================================
+// METADATA AUTO-EXTRACTOR HOOKS (.glb & .mp4)
+// ============================================================
+function useGlbMetadata(url?: string) {
+  const [meta, setMeta] = useState<{ size: string; polygons: string; pbr: string; loading: boolean }>({
+    size: '',
+    polygons: '',
+    pbr: '',
+    loading: false,
+  })
+
+  useEffect(() => {
+    if (!url) {
+      setMeta({ size: '', polygons: '', pbr: '', loading: false })
+      return
+    }
+
+    let active = true
+    setMeta({ size: '', polygons: '', pbr: '', loading: true })
+
+    async function analyzeGlb() {
+      let fileSize = 0
+      let polyCount = 0
+      let pbrType = ''
+
+      try {
+        const headRes = await fetch(url!, { method: 'HEAD' }).catch(() => null)
+        if (headRes?.ok) {
+          const cl = headRes.headers.get('content-length')
+          if (cl) fileSize = parseInt(cl, 10)
+        }
+
+        const rangeRes = await fetch(url!, {
+          headers: { Range: 'bytes=0-131071' },
+        }).catch(() => null)
+
+        if (rangeRes && (rangeRes.ok || rangeRes.status === 206)) {
+          const buffer = await rangeRes.arrayBuffer()
+
+          if (!fileSize) {
+            const cr = rangeRes.headers.get('content-range')
+            if (cr) {
+              const total = cr.split('/')[1]
+              if (total && !isNaN(Number(total))) fileSize = Number(total)
+            }
+          }
+
+          if (buffer.byteLength >= 20) {
+            const view = new DataView(buffer)
+            const magic = view.getUint32(0, true)
+            if (magic === 0x46546c67) {
+              const jsonLength = view.getUint32(12, true)
+              const jsonType = view.getUint32(16, true)
+              if (jsonType === 0x4e4f5353 || jsonType === 0x4f53534e) {
+                const jsonBytes = new Uint8Array(buffer, 20, Math.min(jsonLength, buffer.byteLength - 20))
+                const jsonStr = new TextDecoder('utf-8').decode(jsonBytes)
+                const gltf = JSON.parse(jsonStr)
+
+                if (gltf.meshes && Array.isArray(gltf.meshes)) {
+                  for (const mesh of gltf.meshes) {
+                    if (!mesh.primitives) continue
+                    for (const prim of mesh.primitives) {
+                      if (prim.indices !== undefined && gltf.accessors?.[prim.indices]) {
+                        polyCount += Math.floor(gltf.accessors[prim.indices].count / 3)
+                      } else if (prim.attributes?.POSITION !== undefined && gltf.accessors?.[prim.attributes.POSITION]) {
+                        polyCount += Math.floor(gltf.accessors[prim.attributes.POSITION].count / 3)
+                      }
+                    }
+                  }
+                }
+
+                if (gltf.materials && gltf.materials.length > 0) {
+                  const hasTex = gltf.textures && gltf.textures.length > 0
+                  pbrType = hasTex ? 'PBR 2K' : 'PBR'
+                }
+              }
+            }
+          }
+        }
+
+        if (!active) return
+
+        const sizeStr = fileSize ? `${(fileSize / (1024 * 1024)).toFixed(1)} MB` : ''
+        const polyStr =
+          polyCount > 0
+            ? polyCount >= 1000
+              ? `${(polyCount / 1000).toFixed(1)}K Polygons`
+              : `${polyCount} Polygons`
+            : '3D Model'
+        const pbrStr = pbrType || 'PBR'
+
+        setMeta({ size: sizeStr, polygons: polyStr, pbr: pbrStr, loading: false })
+      } catch {
+        if (active) {
+          setMeta({ size: '', polygons: '3D Model', pbr: 'GLB', loading: false })
+        }
+      }
+    }
+
+    analyzeGlb()
+
+    return () => {
+      active = false
+    }
+  }, [url])
+
+  return meta
+}
+
+function useVideoMetadata(url?: string) {
+  const [meta, setMeta] = useState<{ size: string; duration: string; resolution: string; loading: boolean }>({
+    size: '',
+    duration: '',
+    resolution: '',
+    loading: false,
+  })
+
+  useEffect(() => {
+    if (!url) {
+      setMeta({ size: '', duration: '', resolution: '', loading: false })
+      return
+    }
+
+    let active = true
+    setMeta({ size: '', duration: '', resolution: '', loading: true })
+
+    async function analyzeVideo() {
+      let fileSize = 0
+
+      try {
+        const headRes = await fetch(url!, { method: 'HEAD' })
+        if (headRes.ok) {
+          const cl = headRes.headers.get('content-length')
+          if (cl) fileSize = parseInt(cl, 10)
+        }
+      } catch {
+        // ignore HEAD failure
+      }
+
+      const sizeStr = fileSize ? `${(fileSize / (1024 * 1024)).toFixed(1)} MB` : ''
+
+      const video = document.createElement('video')
+      video.preload = 'metadata'
+      video.muted = true
+      video.playsInline = true
+      video.src = url!
+
+      const cleanup = () => {
+        video.onloadedmetadata = null
+        video.onerror = null
+        video.src = ''
+        video.remove()
+      }
+
+      video.onloadedmetadata = () => {
+        if (!active) {
+          cleanup()
+          return
+        }
+
+        const dSec = Math.round(video.duration || 0)
+        const m = Math.floor(dSec / 60)
+        const s = dSec % 60
+        const durationStr = dSec > 0 ? `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} Min` : ''
+
+        const h = video.videoHeight
+        const w = video.videoWidth
+        let resStr = ''
+        if (h >= 2160 || w >= 3840) resStr = '4K Ultra HD'
+        else if (h >= 1440 || w >= 2560) resStr = '2K QHD'
+        else if (h >= 1080 || w >= 1920) resStr = '1080p Full HD'
+        else if (h >= 720 || w >= 1280) resStr = '720p HD'
+        else if (h > 0) resStr = `${h}p SD`
+
+        setMeta({ size: sizeStr, duration: durationStr, resolution: resStr, loading: false })
+        cleanup()
+      }
+
+      video.onerror = () => {
+        if (!active) {
+          cleanup()
+          return
+        }
+        setMeta({ size: sizeStr || 'File MP4', duration: '', resolution: 'HD', loading: false })
+        cleanup()
+      }
+    }
+
+    analyzeVideo()
+
+    return () => {
+      active = false
+    }
+  }, [url])
+
+  return meta
+}
 
 // ============================================================
 // FOTO — dipakai buat gambar kartu & tiap item galeri media.
@@ -107,6 +310,9 @@ export function KoleksiModelUpload({
   const [busy, setBusy] = useState(false)
   const [phase, setPhase] = useState<'optimizing' | 'uploading'>('optimizing')
   const [progress, setProgress] = useState(0)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [tempRotation, setTempRotation] = useState<[number, number, number]>(rotation)
+  const glbMeta = useGlbMetadata(value)
 
   return (
     <div className="p-4 bg-[#F3EFE4] border border-[#D5C9B2] rounded-sm space-y-3">
@@ -144,7 +350,20 @@ export function KoleksiModelUpload({
 
       {!busy && value ? (
         <div className="bg-[#FFFDF9] p-3.5 border border-[#DCD3C1] rounded-sm space-y-3">
-          <span className="text-xs font-bold text-[#1A1816] font-mono break-all block">{value.split('/').pop()}</span>
+          <div className="p-3 bg-[#F8F5EC] border border-[#D5C9B2] rounded-sm space-y-1">
+            <span className="text-xs font-bold text-[#1A1816] font-mono break-all block">{value.split('/').pop()}</span>
+            {glbMeta.loading ? (
+              <span className="text-[11px] font-mono text-[#8A7144] opacity-70 animate-pulse block">Membaca info 3D…</span>
+            ) : (
+              (glbMeta.size || glbMeta.polygons) && (
+                <div className="flex items-center gap-1.5 text-xs text-[#8A7144]">
+                  {glbMeta.size && <span className="font-semibold">{glbMeta.size}</span>}
+                  {glbMeta.size && glbMeta.polygons && <span className="text-[#A0988A]">•</span>}
+                  <span className="text-[#7A7163]">{glbMeta.polygons} ({glbMeta.pbr})</span>
+                </div>
+              )
+            )}
+          </div>
 
           <div className="p-3 bg-[#F8F5EC] border border-[#D5C9B2] rounded-sm space-y-2.5">
             <span className="text-[11px] font-bold text-[#1A1816] flex items-center gap-1">
@@ -199,20 +418,23 @@ export function KoleksiModelUpload({
           </div>
 
           <div className="flex items-center gap-2">
-            <a
-              href="/viewer"
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => {
+                setTempRotation([...rotation])
+                setPreviewOpen(true)
+              }}
               className="flex-1 py-2 bg-[#2C2825] hover:bg-[#1A1816] text-[#FFD966] text-xs font-bold rounded-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
             >
               <Maximize2 className="w-4 h-4" />
               Uji Coba Viewer 3D
-            </a>
+            </button>
             <button
               type="button"
               onClick={() => onChange(undefined)}
-              className="px-3 py-2 border border-[#DCD3C1] hover:bg-red-50 text-red-600 text-xs font-semibold rounded-sm transition-colors cursor-pointer"
+              className="px-3 py-2 border border-[#DCD3C1] hover:bg-red-50 text-red-600 text-xs font-semibold rounded-sm transition-colors cursor-pointer flex items-center gap-1.5"
             >
+              <Trash2 className="w-3.5 h-3.5" />
               Hapus
             </button>
           </div>
@@ -256,6 +478,135 @@ export function KoleksiModelUpload({
           <span className="text-[10px] text-[#7A7163]">Hasil scan Photogrammetry / LiDAR, ukuran berapapun</span>
         </label>
       ) : null}
+
+      {previewOpen && value && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-4xl bg-[#FFFDF9] rounded-sm overflow-hidden shadow-2xl border border-[#D5C9B2] flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between gap-3 px-5 py-3.5 bg-[#F3EFE4] border-b border-[#D5C9B2] shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Box className="w-5 h-5 text-[#8A7144] shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-serif font-bold text-[#2C2825]">
+                    Pratinjau & Koreksi Postur 3D
+                  </p>
+                  <p className="text-[11px] font-mono text-[#8A7144] truncate">
+                    {value.split('/').pop()}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(false)}
+                className="p-1 text-[#6B5E4C] hover:text-[#1A1816] transition-colors cursor-pointer shrink-0"
+                aria-label="Tutup tanpa menyimpan"
+                title="Batal / Tutup tanpa menyimpan posisi"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto flex flex-col lg:flex-row">
+              <div className="w-full lg:w-2/3 bg-[#F3EFE4] relative min-h-[360px] lg:min-h-[420px] border-b lg:border-b-0 lg:border-r border-[#D5C9B2]">
+                <ModelViewer modelUrl={value} rotation={tempRotation} />
+              </div>
+
+              <div className="w-full lg:w-1/3 p-4 bg-[#F8F5EC] space-y-4 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-1.5 border-b border-[#D5C9B2] pb-2">
+                    <RotateCw className="w-4 h-4 text-[#8A7144]" />
+                    <span className="text-xs font-bold text-[#1A1816]">Koreksi Postur Real-Time</span>
+                  </div>
+
+                  <p className="text-[11px] text-[#6B5E4C] leading-relaxed">
+                    Atur preset atau geser slider X/Y/Z hingga model berdiri tegak & menghadap depan:
+                  </p>
+
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-[#5C4D32] uppercase tracking-wider block">Preset Cepat</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {ROTATION_PRESETS.map((p) => {
+                        const active = tempRotation[0] === p.value[0] && tempRotation[1] === p.value[1] && tempRotation[2] === p.value[2]
+                        return (
+                          <button
+                            key={p.label}
+                            type="button"
+                            onClick={() => setTempRotation(p.value)}
+                            className={`px-2 py-1.5 text-[10px] font-bold rounded-sm border transition-all cursor-pointer text-center ${
+                              active
+                                ? 'bg-[#8A7144] text-white border-[#8A7144] shadow-sm'
+                                : 'bg-[#FFFDF9] text-[#2C2825] border-[#D5C9B2] hover:border-[#8A7144]'
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-1 border-t border-[#E2DBD0]">
+                    <span className="text-[10px] font-bold text-[#5C4D32] uppercase tracking-wider block">Penyesuaian Presisi Sumbu</span>
+                    {(['X', 'Y', 'Z'] as const).map((axis, idx) => (
+                      <div key={axis} className="space-y-1 bg-[#FFFDF9] p-2 border border-[#E2DBD0] rounded-sm">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-[#5C4D32] font-bold">Sumbu {axis}</span>
+                          <span className="font-mono font-bold text-[#8A7144]">{tempRotation[idx]}°</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-180"
+                          max="180"
+                          step="5"
+                          value={tempRotation[idx]}
+                          onChange={(e) => {
+                            const next: [number, number, number] = [...tempRotation]
+                            next[idx] = parseInt(e.target.value, 10)
+                            setTempRotation(next)
+                          }}
+                          className="w-full accent-[#8A7144] cursor-pointer"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-[#FFFDF9] border border-[#D5C9B2] rounded-sm text-center">
+                  <span className="text-[10px] text-[#7A7163] uppercase font-mono block">Rotasi Sementara</span>
+                  <span className="text-xs font-mono font-bold text-[#8A7144]">
+                    [{tempRotation[0]}°, {tempRotation[1]}°, {tempRotation[2]}°]
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 px-5 py-3 bg-[#F3EFE4] border-t border-[#D5C9B2] shrink-0">
+              <p className="text-[11px] font-mono text-[#6B5E4C] hidden sm:block">
+                Drag/geser panggung 3D untuk memutar 360°, scroll untuk zoom
+              </p>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen(false)}
+                  className="px-3.5 py-2 border border-[#D5C9B2] hover:bg-[#EFECE1] text-[#4A433A] text-xs font-semibold rounded-sm cursor-pointer transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRotationChange(tempRotation)
+                    setPreviewOpen(false)
+                    toast('Posisi & rotasi postur 3D berhasil dikunci.', 'success')
+                  }}
+                  className="px-5 py-2 bg-[#8A7144] hover:bg-[#725C34] text-white text-xs font-bold rounded-sm cursor-pointer transition-colors shadow-sm flex items-center justify-center gap-1.5"
+                >
+                  <span>🔒 Tutup & Kunci Posisi</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -331,6 +682,7 @@ export function KoleksiVideoSlot({
   const [progress, setProgress] = useState(0)
   const [previewOpen, setPreviewOpen] = useState(false)
   const embedUrl = getYouTubeEmbedUrl(youtubeUrl)
+  const videoMeta = useVideoMetadata(fileUrl)
   // URL teknis (domain R2, hash, dll) gak perlu & gak boleh keliatan
   // sama admin — cukup nama filenya doang.
   const fileName = fileUrl ? fileUrl.split('/').pop()?.replace(/^\d+-[a-z0-9]+-/, '') : ''
@@ -398,21 +750,11 @@ export function KoleksiVideoSlot({
                 <span className="block text-[11px] font-bold text-[#3D3730] mb-1">Link YouTube</span>
                 <input
                   value={youtubeUrl}
-                  onChange={(e) => onChange({ youtubeUrl: e.target.value })}
+                  onChange={(e) => onChange({ youtubeUrl: e.target.value, videoSource: 'youtube' })}
                   placeholder="https://youtube.com/watch?v=..."
                   className={slotInputCls}
                 />
               </div>
-              {embedUrl && (
-                <button
-                  type="button"
-                  onClick={() => setPreviewOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2C2825] hover:bg-[#1A1816] text-[#FFD966] text-xs font-bold rounded-sm cursor-pointer transition-colors shadow-sm"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  Pratinjau Video
-                </button>
-              )}
             </div>
           ) : busy ? (
             <div className="space-y-1">
@@ -422,33 +764,22 @@ export function KoleksiVideoSlot({
               </div>
             </div>
           ) : fileUrl ? (
-            // ── Video hasil upload — tampilin nama file & player, BUKAN URL mentah ──
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-[#1A1816] block truncate">{fileName}</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPreviewOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2C2825] hover:bg-[#1A1816] text-[#FFD966] text-xs font-bold rounded-sm cursor-pointer transition-colors shadow-sm"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  Pratinjau Video
-                </button>
-                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[#DCD3C1] hover:bg-[#F3EFE4] text-[#2C2825] text-xs font-semibold rounded-sm cursor-pointer transition-colors">
-                  <input
-                    type="file"
-                    accept=".mp4,.webm,.mov,video/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      e.target.value = ''
-                      if (file) handleUpload(file)
-                    }}
-                  />
-                  <UploadCloud className="w-3.5 h-3.5" />
-                  Ganti File
-                </label>
-              </div>
+            // ── Video hasil upload — tampilin nama file & metadata real-time di Card ──
+            <div className="p-3 bg-[#F8F5EC] border border-[#D5C9B2] rounded-sm space-y-1">
+              <span className="text-xs font-bold text-[#1A1816] font-mono block truncate">{fileName}</span>
+              {videoMeta.loading ? (
+                <span className="text-[11px] font-mono text-[#8A7144] opacity-70 animate-pulse block">Membaca metadata video…</span>
+              ) : (
+                (videoMeta.size || videoMeta.duration || videoMeta.resolution) && (
+                  <div className="flex items-center gap-1.5 text-xs text-[#8A7144]">
+                    {videoMeta.size && <span className="font-semibold">{videoMeta.size}</span>}
+                    {videoMeta.size && videoMeta.duration && <span className="text-[#A0988A]">•</span>}
+                    {videoMeta.duration && <span className="text-[#7A7163]">{videoMeta.duration}</span>}
+                    {(videoMeta.size || videoMeta.duration) && videoMeta.resolution && <span className="text-[#A0988A]">•</span>}
+                    {videoMeta.resolution && <span className="text-[#7A7163]">{videoMeta.resolution}</span>}
+                  </div>
+                )
+              )}
             </div>
           ) : (
             <label className="block border-2 border-dashed border-[#D5C9B2] hover:border-[#8A7144] p-4 text-center rounded-sm bg-[#FFFDF9] cursor-pointer transition-colors">
@@ -467,20 +798,41 @@ export function KoleksiVideoSlot({
             </label>
           )}
 
-          <input
-            value={caption ?? ''}
-            onChange={(e) => onChange({ caption: e.target.value })}
-            placeholder="Keterangan / caption (opsional)"
-            className={slotInputCls}
-          />
-          <button
-            type="button"
-            onClick={() => onChange(null)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[#DCD3C1] hover:bg-red-50 text-red-600 text-xs font-semibold rounded-sm transition-colors cursor-pointer"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            Hapus Video
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              disabled={videoSource === 'youtube' ? !embedUrl : !fileUrl}
+              className="flex-1 py-2 bg-[#2C2825] hover:bg-[#1A1816] text-[#FFD966] text-xs font-bold rounded-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Play className="w-4 h-4 fill-[#FFD966]" />
+              Pratinjau Video
+            </button>
+            {videoSource === 'file' && fileUrl && (
+              <label className="px-3 py-2 border border-[#DCD3C1] hover:bg-[#F3EFE4] text-[#2C2825] text-xs font-semibold rounded-sm cursor-pointer transition-colors flex items-center gap-1.5 shrink-0">
+                <input
+                  type="file"
+                  accept=".mp4,.webm,.mov,video/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    e.target.value = ''
+                    if (file) handleUpload(file)
+                  }}
+                />
+                <UploadCloud className="w-3.5 h-3.5" />
+                Ganti File
+              </label>
+            )}
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="px-3 py-2 border border-[#DCD3C1] hover:bg-red-50 text-red-600 text-xs font-semibold rounded-sm transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Hapus
+            </button>
+          </div>
         </div>
       ) : (
         <button

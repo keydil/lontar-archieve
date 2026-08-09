@@ -141,7 +141,8 @@ export default function KoleksiEditor({
     if (videoEntry) {
       updateMediaAt(videoEntry.idx, fields)
     } else {
-      const newItem: MediaItem = { id: uid('media'), type: 'video', url: '', caption: '', thumbnail: '', ...fields }
+      const defaultSource = fields.videoSource ?? (fields.url ? 'file' : 'youtube')
+      const newItem: MediaItem = { id: uid('media'), type: 'video', url: '', caption: '', thumbnail: '', videoSource: defaultSource, ...fields }
       patch({ media: [...media, newItem] })
     }
   }
@@ -357,7 +358,7 @@ export default function KoleksiEditor({
             />
             <KoleksiVideoSlot
               active={!!videoEntry}
-              videoSource={videoEntry?.m.videoSource ?? 'youtube'}
+              videoSource={videoEntry?.m.videoSource ?? (videoEntry?.m.url && !videoEntry?.m.youtubeUrl ? 'file' : 'youtube')}
               youtubeUrl={videoEntry?.m.youtubeUrl ?? ''}
               fileUrl={videoEntry?.m.url ?? ''}
               caption={videoEntry?.m.caption}
