@@ -18,12 +18,21 @@ import {
   BookOpen,
 } from 'lucide-react'
 import { getKoleksiBySlug, useCMS } from '@/lib/cms'
-import type { Artifact } from '@/data/koleksi'
+import type { Artifact, MediaItem } from '@/data/koleksi'
 import { BackgroundOrnaments } from '@/components/koleksi/BackgroundOrnaments'
+import { getYouTubeEmbedUrl, getYouTubeThumbnail } from '@/lib/youtube'
 
 const ModelViewer = dynamic(() => import('@/components/ModelViewer'), {
   ssr: false,
 })
+
+// Link YouTube & file upload kesimpen terpisah (lihat MediaItem di
+// data/koleksi.ts) — `videoSource` nentuin mana yang aktif. Fallback ke
+// `youtubeUrl || url` buat data lama dari sebelum field ini ada.
+function resolveVideoUrl(m: MediaItem): string {
+  if (m.videoSource === 'file') return m.url
+  return m.youtubeUrl || m.url
+}
 
 export default function KoleksiDetailPage() {
   const params = useParams()
@@ -98,10 +107,16 @@ export default function KoleksiDetailPage() {
     )
   }
 
-  const media = artifact.media ?? []
-  const has3D = Boolean(artifact.modelUrl)
+  // Media/model yang di-toggle "sembunyi" di admin tetep kesimpen datanya,
+  // tapi gak dirender di sini — bukan berarti gak ada, cuma lagi disembunyiin.
+  const media = (artifact.media ?? []).filter((m) => m.enabled !== false)
+  const has3D = Boolean(artifact.modelUrl) && artifact.modelEnabled !== false
   const current = media[activeMedia]
   const show3D = showModel || (has3D && media.length === 0)
+  const currentVideoUrl = current?.type === 'video' ? resolveVideoUrl(current) : ''
+  const currentEmbedUrl = current?.type === 'video' && current.videoSource !== 'file'
+    ? getYouTubeEmbedUrl(currentVideoUrl)
+    : null
 
   return (
     <div className="min-h-screen relative bg-[#F8F5EC]">
@@ -181,11 +196,21 @@ export default function KoleksiDetailPage() {
                 current ? (
                   <div className="absolute inset-0 flex items-center justify-center">
                     {current.type === 'video' ? (
-                      <video
-                        src={current.url}
-                        controls
-                        className="w-full h-full object-contain rounded-sm bg-black"
-                      />
+                      currentEmbedUrl ? (
+                        <iframe
+                          src={currentEmbedUrl}
+                          title={current.caption || artifact.name}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          className="w-full h-full rounded-sm border-0 bg-black"
+                        />
+                      ) : (
+                        <video
+                          src={currentVideoUrl}
+                          controls
+                          className="w-full h-full object-contain rounded-sm bg-black"
+                        />
+                      )
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -215,29 +240,34 @@ export default function KoleksiDetailPage() {
 
             {!show3D && media.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-1 mb-2">
-                {media.map((m, idx) => (
-                  <button
-                    key={m.id}
-                    onClick={() => setActiveMedia(idx)}
-                    title={m.caption || `Foto ${idx + 1}`}
-                    className={`w-14 h-14 shrink-0 rounded-sm overflow-hidden border-2 transition-colors cursor-pointer ${activeMedia === idx ? 'border-[#8A6D3B]' : 'border-transparent'
-                      }`}
-                  >
-                    {m.type === 'video' && !m.thumbnail ? (
-                      <span className="w-full h-full flex items-center justify-center bg-[#1A1816] text-white text-sm">
-                        &#9654;
-                      </span>
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={m.thumbnail || m.url}
-                        alt=""
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </button>
-                ))}
+                {media.map((m, idx) => {
+                  // Video: sampul YouTube otomatis kalau ada, kalau file
+                  // langsung tanpa thumbnail ya fallback ikon play.
+                  const stripThumb = m.type === 'video' ? (m.thumbnail || getYouTubeThumbnail(resolveVideoUrl(m))) : m.thumbnail
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => setActiveMedia(idx)}
+                      title={m.caption || `Foto ${idx + 1}`}
+                      className={`w-14 h-14 shrink-0 rounded-sm overflow-hidden border-2 transition-colors cursor-pointer ${activeMedia === idx ? 'border-[#8A6D3B]' : 'border-transparent'
+                        }`}
+                    >
+                      {m.type === 'video' && !stripThumb ? (
+                        <span className="w-full h-full flex items-center justify-center bg-[#1A1816] text-white text-sm">
+                          &#9654;
+                        </span>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={stripThumb || m.url}
+                          alt=""
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             )}
 

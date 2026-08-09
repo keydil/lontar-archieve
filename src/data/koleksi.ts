@@ -13,9 +13,17 @@
 export interface MediaItem {
   id: string
   type: 'image' | 'video'
-  url: string
+  url: string          // gambar: url foto. video: url file (.mp4/dst) hasil unggah ke R2
   caption?: string
   thumbnail?: string  // gambar sampul untuk video (JPG/PNG)
+  // Toggle tampil/sembunyi di situs publik TANPA ngapus data-nya (mis.
+  // video lagi direview ulang). Kosong/true = tampil.
+  enabled?: boolean
+  // ── Khusus video: link YouTube & file upload kesimpen TERPISAH,
+  // gak saling timpa. `videoSource` nentuin mana yang aktif tampil di
+  // publik — ganti tab gak ngapus data source yang lain.
+  youtubeUrl?: string
+  videoSource?: 'youtube' | 'file'
 }
 
 export interface Artifact {
@@ -36,6 +44,9 @@ export interface Artifact {
   description_id: string
   description_en: string
   modelUrl?: string    // URL publik file .glb di Cloudflare R2 — kosong = belum ada 3D
+  // Toggle tampil/sembunyi model 3D di situs publik TANPA ngapus modelUrl
+  // (mis. lagi dikalibrasi ulang). Kosong/true = tampil.
+  modelEnabled?: boolean
   // Rotasi koreksi model 3D (derajat, urutan X/Y/Z). Tool scan yang beda
   // (KIRI Engine vs RealityScan) punya konvensi sumbu "atas" yang beda,
   // jadi satu rotasi bawaan gak selalu cocok buat semua model. Kosong =

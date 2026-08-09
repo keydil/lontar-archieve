@@ -56,7 +56,7 @@ export default function KoleksiPage() {
       type: a.type,
       category: a.category,
       description_id: a.description_id,
-      modelUrl: a.modelUrl,
+      modelUrl: a.modelEnabled !== false ? a.modelUrl : undefined,
     }))
   }, [filteredArtifacts])
 

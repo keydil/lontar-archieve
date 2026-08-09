@@ -56,16 +56,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Sesi login tidak valid, silakan login ulang.' }, { status: 401 })
   }
 
-  // ── 2. Validasi input ──
+  // ── 2. Validasi input — model 3D (.glb) atau video dokumentasi ──
   const body = await request.json().catch(() => null) as { filename?: string } | null
-  const filename = body?.filename
-  if (!filename || !filename.toLowerCase().endsWith('.glb')) {
-    return NextResponse.json({ error: 'Nama file harus berakhiran .glb' }, { status: 400 })
+  const filename = body?.filename?.toLowerCase()
+  const EXT_MAP: Record<string, { contentType: string; folder: string }> = {
+    '.glb': { contentType: 'model/gltf-binary', folder: 'models' },
+    '.mp4': { contentType: 'video/mp4', folder: 'videos' },
+    '.webm': { contentType: 'video/webm', folder: 'videos' },
+    '.mov': { contentType: 'video/quicktime', folder: 'videos' },
   }
+  const ext = filename ? Object.keys(EXT_MAP).find((e) => filename.endsWith(e)) : undefined
+  if (!filename || !ext) {
+    return NextResponse.json({ error: 'Nama file harus berakhiran .glb, .mp4, .webm, atau .mov' }, { status: 400 })
+  }
+  const { contentType, folder } = EXT_MAP[ext]
 
   // Nama object unik — hindari tabrakan/timpa file lama.
-  const safeName = filename.toLowerCase().replace(/[^a-z0-9.-]+/g, '-')
-  const key = `models/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`
+  const safeName = filename.replace(/[^a-z0-9.-]+/g, '-')
+  const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`
 
   // ── 3. Generate presigned PUT URL ──
   const s3 = new S3Client({
@@ -81,7 +89,7 @@ export async function POST(request: Request) {
   const command = new PutObjectCommand({
     Bucket: STORAGE_BUCKET_NAME,
     Key: key,
-    ContentType: 'model/gltf-binary',
+    ContentType: contentType,
   })
   const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 }) // 10 menit — cukup buat file ratusan MB di koneksi lambat
 
