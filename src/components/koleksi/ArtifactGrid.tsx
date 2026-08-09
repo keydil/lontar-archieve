@@ -64,6 +64,8 @@ export const ArtifactGrid: React.FC<ArtifactGridProps> = ({
                                     src={item.imageUrl}
                                     alt={item.name}
                                     referrerPolicy="no-referrer"
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-auto block rounded-sm transition-transform duration-500 group-hover:scale-105"
                                 />
                                 {item.modelUrl && (

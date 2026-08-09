@@ -46,6 +46,14 @@ export default function KoleksiDetailPage() {
   const [langId, setLangId] = useState(true) // true = Indonesia, false = English
   const [activeMedia, setActiveMedia] = useState(0)
   const [showModel, setShowModel] = useState(false)
+  // ModelViewer (WebGL/Three.js) baru boleh di-mount pas beneran dipencet
+  // tab 3D-nya — bukan dari awal buka halaman. `useFrame`+OrbitControls
+  // di dalamnya render tiap frame TERUS-MENERUS begitu dia mounted, gak
+  // peduli disembunyiin via CSS visibility apa nggak — kalau dari awal
+  // ke-mount, itu bikin lag/berat di background walau lagi liat tab foto.
+  // Sekali dipencet, tetep dibiarin mounted (biar toggle bolak-balik gak
+  // fetch/init ulang) — cuma delay-nya digeser ke "pas dibutuhin" doang.
+  const [model3DActivated, setModel3DActivated] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
 
   useEffect(() => {
@@ -67,9 +75,23 @@ export default function KoleksiDetailPage() {
     if (!artifact) return
     setActiveMedia(0)
     setShowModel(false)
+    setModel3DActivated(false)
     setCopiedLink(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [artifact])
+
+  // Nyalain ModelViewer pertama kali beneran dibutuhin — pas tombol "Model
+  // 3D" dipencet, atau kalau artefaknya emang gak punya foto sama sekali
+  // (otomatis nampilin 3D). Abis itu tetep dibiarin mounted (toggle
+  // bolak-balik ke tab foto gak perlu fetch/init ulang modelnya).
+  useEffect(() => {
+    if (!artifact) return
+    const enabledMedia = (artifact.media ?? []).filter((m) => m.enabled !== false)
+    const artifactHas3D = Boolean(artifact.modelUrl) && artifact.modelEnabled !== false
+    if (showModel || (artifactHas3D && enabledMedia.length === 0)) {
+      setModel3DActivated(true)
+    }
+  }, [artifact, showModel])
 
   // Rekomendasi: prioritaskan kategori yang sama, isi sisanya dari koleksi
   // lain kalau kategori ini tipis — dan jujur dilabel "Koleksi Lainnya",
@@ -186,7 +208,7 @@ export default function KoleksiDetailPage() {
             </div>
 
             <div className="relative flex-1 my-2 min-h-[260px]">
-              {has3D && (
+              {model3DActivated && (
                 <div className={`absolute inset-0 ${show3D ? 'visible' : 'invisible'}`}>
                   <ModelViewer modelUrl={artifact.modelUrl!} rotation={artifact.modelRotation} />
                 </div>
