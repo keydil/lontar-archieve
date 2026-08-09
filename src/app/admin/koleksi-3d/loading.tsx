@@ -1,5 +1,5 @@
-import { ListViewSkeleton } from '@/components/admin/AdminViews'
+import { KoleksiListSkeleton } from '@/components/admin/koleksi/KoleksiList'
 
 export default function Loading() {
-  return <ListViewSkeleton />
+  return <KoleksiListSkeleton />
 }

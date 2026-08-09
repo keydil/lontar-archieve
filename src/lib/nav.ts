@@ -11,7 +11,7 @@ export const NAV_ITEMS: NavItem[] = [
 
 // Navigasi sidebar Panel Admin — sumber tunggal buat layout + link.
 export interface AdminNavItem {
-  id: 'dashboard' | 'arsip' | 'koleksi' | 'backup'
+  id: 'dashboard' | 'arsip' | 'koleksi' | 'seo' | 'backup'
   label: string
   href: string
 }
@@ -20,5 +20,6 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: 'dashboard', label: 'Dashboard', href: '/admin' },
   { id: 'arsip', label: 'Arsip', href: '/admin/arsip' },
   { id: 'koleksi', label: 'Koleksi', href: '/admin/koleksi-3d' },
+  { id: 'seo', label: 'SEO & Schema', href: '/admin/seo' },
   { id: 'backup', label: 'Data & Backup', href: '/admin/backup' },
 ]
