@@ -17,8 +17,10 @@ import { artifacts as koleksiSeed } from '@/data/koleksi'
 import type { Artifact, MediaItem } from '@/data/koleksi'
 import { naskahSeed } from '@/data/naskah'
 import type { LontarNaskah, LontarVerse } from '@/data/naskah'
+import { defaultSettings } from '@/data/settings'
+import type { SiteSettings } from '@/data/settings'
 
-export type { Artifact, LontarNaskah }
+export type { Artifact, LontarNaskah, SiteSettings }
 
 export interface CMSData {
   koleksi: Artifact[]
@@ -28,6 +30,7 @@ export interface CMSData {
 // Nama tabel di Supabase
 const T_NASKAH = 'naskah'
 const T_KOLEKSI = 'koleksi'
+const T_SETTINGS = 'settings'
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x))
@@ -251,6 +254,24 @@ export async function getKoleksiBySlug(slug: string): Promise<Artifact | undefin
 }
 
 // ============================================================
+// PENGATURAN SEO — satu baris (id='global'), dipakai form admin.
+// Versi buat generateMetadata (server, SSR) ada terpisah di
+// src/lib/settings-server.ts karena file ini 'use client'.
+// ============================================================
+export async function getSettings(): Promise<SiteSettings> {
+  if (!supabaseConfigured) return defaultSettings
+  const { data, error } = await supabase.from(T_SETTINGS).select('data').eq('id', 'global').maybeSingle()
+  if (error || !data) return defaultSettings
+  return { ...defaultSettings, ...(data.data as Partial<SiteSettings>) }
+}
+
+export async function upsertSettings(next: SiteSettings) {
+  await requireConfigured()
+  const { error } = await supabase.from(T_SETTINGS).upsert({ id: 'global', data: next })
+  if (error) throw error
+}
+
+// ============================================================
 // SEED / EXPORT / IMPORT — untuk tab Data & Backup di admin
 // ============================================================
 export async function seedIntoDatabase() {
@@ -437,6 +458,44 @@ export async function uploadModel(
     xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload gagal (${xhr.status}).`)))
     xhr.onerror = () => reject(new Error('Upload gagal — periksa koneksi internet.'))
     xhr.send(uploadBlob)
+  })
+
+  return publicUrl
+}
+
+// Upload video dokumentasi — presign yang sama kayak model 3D (satu API
+// route ngelayanin .glb dan video), tapi tanpa langkah optimasi tekstur
+// yang emang khusus GLB.
+export async function uploadVideo(
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<string> {
+  await requireConfigured()
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData.session?.access_token
+  if (!token) throw new Error('Belum login.')
+
+  const presignRes = await fetch('/api/models/presign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ filename: file.name }),
+  })
+  if (!presignRes.ok) {
+    const body = await presignRes.json().catch(() => ({}))
+    throw new Error(body.error || 'Gagal menyiapkan upload.')
+  }
+  const { uploadUrl, publicUrl } = await presignRes.json() as { uploadUrl: string; publicUrl: string }
+
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('PUT', uploadUrl)
+    xhr.setRequestHeader('Content-Type', file.type || 'video/mp4')
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100))
+    }
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload gagal (${xhr.status}).`)))
+    xhr.onerror = () => reject(new Error('Upload gagal — periksa koneksi internet.'))
+    xhr.send(file)
   })
 
   return publicUrl
