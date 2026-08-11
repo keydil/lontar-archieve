@@ -37,6 +37,7 @@
   ],
   "exclude": [
     "node_modules",
-    "lontar-update"
+    "lontar-update",
+    "src/components/aistudio"
   ]
 }
