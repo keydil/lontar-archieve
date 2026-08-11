@@ -1,30 +1,10 @@
 'use client'
 
 import { forwardRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { aksaraSundaGroups } from '@/data/aksara-sunda'
 import { uploadImage, uploadModel, getExternalTextureUris } from '@/lib/cms'
 import { toast, confirmDialog } from './Feedback'
 
 const mono = "'DM Mono', monospace"
-
-// ── Lock / Unlock icons — dipakai buat status "finalized" ──
-export function LockIcon({ size = 12, style }: { size?: number; style?: CSSProperties }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={style}>
-      <rect x="3.25" y="7.25" width="9.5" height="6.75" rx="1.3" />
-      <path d="M5.5 7.25V4.9a2.5 2.5 0 0 1 5 0v2.35" />
-    </svg>
-  )
-}
-
-export function UnlockIcon({ size = 12, style }: { size?: number; style?: CSSProperties }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={style}>
-      <rect x="3.25" y="7.25" width="9.5" height="6.75" rx="1.3" />
-      <path d="M5.5 7.25V4.9a2.5 2.5 0 0 1 4.85-.65" />
-    </svg>
-  )
-}
 
 // ── Skeleton — placeholder shimmer buat state loading, gantiin teks
 // "Memuat..." yang cuma numpang lewat & bikin layout kedip.
@@ -222,75 +202,6 @@ export function SectionTitle({ children }: { children: ReactNode }) {
   )
 }
 
-// ============================================================
-// AKSARA SUNDA KEYBOARD — palet karakter on-screen
-// Menyisipkan karakter ke input yang sedang aktif via onInsert.
-// ============================================================
-export function AksaraKeyboard({ onInsert }: { onInsert: (char: string) => void }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div style={{ marginBottom: '1rem' }}>
-      <Button type="button" variant="outline" onClick={() => setOpen((o) => !o)}>
-        ⌨ Papan Aksara Sunda {open ? '▲' : '▼'}
-      </Button>
-      {open && (
-        <div
-          style={{
-            marginTop: '0.75rem',
-            border: '1px solid var(--border)',
-            borderRadius: '10px',
-            padding: '1rem',
-            background: 'var(--bone)',
-            maxHeight: '340px',
-            overflowY: 'auto',
-          }}
-        >
-          {aksaraSundaGroups.map((group) => (
-            <div key={group.label} style={{ marginBottom: '1rem' }}>
-              <div
-                style={{
-                  fontFamily: mono,
-                  fontSize: '11px',
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: 'var(--warm)',
-                  marginBottom: '0.5rem',
-                }}
-              >
-                {group.label} — <span style={{ opacity: 0.85 }}>{group.hint}</span>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                {group.chars.map((c, i) => (
-                  <button
-                    key={c.name + i}
-                    type="button"
-                    onClick={() => onInsert(c.char)}
-                    title={c.name}
-                    style={{
-                      minWidth: '44px',
-                      padding: '0.4rem',
-                      border: '1px solid var(--border)',
-                      borderRadius: '6px',
-                      background: 'var(--bone)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '2px',
-                    }}
-                  >
-                    <span style={{ fontSize: '24px', fontFamily: 'serif', lineHeight: 1 }}>{c.char}</span>
-                    <span style={{ fontFamily: mono, fontSize: '10px', color: 'var(--warm)' }}>{c.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ============================================================
 // IMAGE UPLOAD — kompres & simpan sebagai data URL

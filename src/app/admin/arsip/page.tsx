@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCMS, deleteNaskah } from '@/lib/cms'
-import { ListView, ListViewSkeleton } from '@/components/admin/AdminViews'
+import { NaskahList, NaskahListSkeleton } from '@/components/admin/naskah/NaskahList'
 import { toast } from '@/components/admin/Feedback'
 
 export default function ArsipListPage() {
@@ -17,22 +17,15 @@ export default function ArsipListPage() {
     if (searchParams.has('tab')) router.replace('/admin/arsip')
   }, [searchParams, router])
 
-  if (!hydrated) return <ListViewSkeleton />
+  if (!hydrated) return <NaskahListSkeleton />
 
   return (
-    <ListView
-      title="Arsip"
-      desc="Teks bacaan interaktif per-ayat (aksara, latin, terjemah, makna). Ini yang tampil di halaman Arsip."
-      items={data.naskah.map((n) => ({
-        key: n.id,
-        primary: n.title || '(tanpa judul)',
-        secondary: `${n.aksaraType ?? ''} · ${n.lembar.length} lembar · ${n.lembar.reduce((sum, l) => sum + l.verses.length, 0)} ayat${n.finalized ? ' · TERKUNCI' : ''}${n.published === false ? ' · DRAFT' : ''}`,
-        thumb: n.coverImage,
-      }))}
+    <NaskahList
+      items={data.naskah}
       onNew={() => router.push('/admin/arsip/new')}
-      onEdit={(key) => router.push(`/admin/arsip/${key}`)}
-      onDelete={async (key) => {
-        try { await deleteNaskah(key); toast('Arsip dihapus.', 'success') }
+      onEdit={(id) => router.push(`/admin/arsip/${id}`)}
+      onDelete={async (id) => {
+        try { await deleteNaskah(id); toast('Arsip dihapus.', 'success') }
         catch (e) { toast('Gagal menghapus: ' + (e as Error).message, 'error') }
       }}
     />

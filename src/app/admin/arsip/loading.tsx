@@ -1,5 +1,5 @@
-import { ListViewSkeleton } from '@/components/admin/AdminViews'
+import { NaskahListSkeleton } from '@/components/admin/naskah/NaskahList'
 
 export default function Loading() {
-  return <ListViewSkeleton />
+  return <NaskahListSkeleton />
 }

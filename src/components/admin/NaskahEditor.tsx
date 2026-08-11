@@ -1,27 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import gsap from 'gsap'
+import { Save, Trash2, Plus, X, BookOpen, Keyboard, Sparkles } from 'lucide-react'
 import type { LontarLembar, LontarNaskah, LontarVerse, LontarWord } from '@/data/naskah'
 import { kelasKataOptions } from '@/data/aksara-sunda'
 import { uid, slugify } from '@/lib/cms'
-import {
-  Field,
-  Input,
-  Textarea,
-  Select,
-  Button,
-  Card,
-  SectionTitle,
-  AksaraKeyboard,
-  ImageUpload,
-  LockIcon,
-  UnlockIcon,
-} from './AdminUI'
+import { KoleksiPhotoUpload } from './koleksi/KoleksiUploads'
+import { AksaraKeyboardPanel } from './naskah/AksaraKeyboardPanel'
 import QRCodeButton from './QRCodeButton'
 import { toast, confirmDialog } from './Feedback'
-
-const mono = "'DM Mono', monospace"
 
 function emptyWord(): LontarWord {
   return { id: uid('w'), aksara: '', latin: '', terjemah: '', kelas: 'kata benda' }
@@ -30,7 +18,7 @@ function emptyVerse(n: number): LontarVerse {
   return { id: uid('v'), verseNumber: n, words: [emptyWord()], terjemahVerse: '', makna: '', catatan: '' }
 }
 function emptyLembar(n: number): LontarLembar {
-  return { id: uid('lembar'), lembarNumber: n, scanImage: undefined, verses: [emptyVerse(1)] }
+  return { id: uid('lembar'), lembarNumber: n, judul: undefined, scanImage: undefined, verses: [emptyVerse(1)] }
 }
 
 export function blankNaskah(): LontarNaskah {
@@ -41,7 +29,6 @@ export function blankNaskah(): LontarNaskah {
     tahun: '',
     aksaraType: 'Aksara Sunda Kuno',
     published: true,
-    finalized: false,
     coverImage: undefined,
     images: [],
     sinopsis: '',
@@ -60,7 +47,45 @@ function buildClean(n: LontarNaskah): LontarNaskah {
   return { ...n, id: n.id || slugify(n.title) || uid('naskah'), lembar }
 }
 
-type Step = { key: string; label: string; kind: 'info' | 'lembar' | 'review'; lembarIndex?: number }
+type StepKind = 'info' | 'transkripsi' | 'review'
+type Step = { key: StepKind; label: string; kind: StepKind }
+const STEPS: Step[] = [
+  { key: 'info', label: 'Info Dasar', kind: 'info' },
+  { key: 'transkripsi', label: 'Transkripsi & Aksara', kind: 'transkripsi' },
+  { key: 'review', label: 'Review & Finalisasi', kind: 'review' },
+]
+
+// ── Field/Input lokal — dipakai khusus di sini (skopnya redesain naskah
+// doang, gak nyentuh AdminUI yang dipakai bareng Dashboard/Backup/SEO). ──
+function NField({ label, hint, error, required, children }: { label: string; hint?: string; error?: string; required?: boolean; children: ReactNode }) {
+  return (
+    <label className="block mb-4">
+      <span className="block text-xs font-bold text-[#3D3730] mb-1">
+        {label}
+        {required && <span className="text-red-600"> *</span>}
+      </span>
+      {children}
+      {error ? (
+        <span className="block text-[11px] font-bold text-red-700 mt-1">⚠ {error}</span>
+      ) : hint ? (
+        <span className="block text-[11px] text-[#8A8172] mt-1 leading-relaxed">{hint}</span>
+      ) : null}
+    </label>
+  )
+}
+
+const inputCls = (invalid?: boolean) =>
+  `w-full p-2.5 bg-[#F9F6EE] border rounded-sm text-xs text-[#2C2825] outline-none focus:border-[#8A7144] ${
+    invalid ? 'border-red-400 bg-red-50' : 'border-[#DCD3C1]'
+  }`
+
+// varian bg-putih — dipakai buat field yang langsung nempel di kartu krem (mis. field
+// tingkat-ayat di dalam kartu Ayat), biar ada kontras lapis alih-alih rata satu warna.
+const inputClsWhite = () => 'w-full p-2.5 bg-white border border-[#DCD3C1] rounded-sm text-xs text-[#2C2825] outline-none focus:border-[#8A7144]'
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return <p className="text-[11px] font-bold uppercase tracking-wider text-[#8A7144] mb-3">{children}</p>
+}
 
 export default function NaskahEditor({
   initial,
@@ -75,8 +100,11 @@ export default function NaskahEditor({
 }) {
   const [naskah, setNaskah] = useState<LontarNaskah>(initial)
   const [activeStepIndex, setActiveStepIndex] = useState(0)
+  // tab lembar aktif di dalam step "Transkripsi & Aksara" — independen dari activeStepIndex
+  const [activeLembarTab, setActiveLembarTab] = useState(0)
   // id kata yang terakhir difokuskan → target papan aksara
   const [focusedWord, setFocusedWord] = useState<string | null>(null)
+  const [showKeyboard, setShowKeyboard] = useState(false)
   // error per-field, ditampilkan langsung di bawah field-nya (bukan cuma toast)
   const [errors, setErrors] = useState<{ title?: string }>({})
   const titleInputRef = useRef<HTMLInputElement>(null)
@@ -91,15 +119,10 @@ export default function NaskahEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty])
 
-  const locked = naskah.finalized ?? false
-
-  const steps: Step[] = [
-    { key: 'info', label: 'Info Dasar', kind: 'info' },
-    ...naskah.lembar.map((l, i): Step => ({ key: l.id, label: `Lembar ${i + 1}`, kind: 'lembar', lembarIndex: i })),
-    { key: 'review', label: 'Review', kind: 'review' },
-  ]
+  const steps = STEPS
   const step = steps[Math.min(activeStepIndex, steps.length - 1)]
-  const activeLembar = step.kind === 'lembar' ? naskah.lembar[step.lembarIndex!] : null
+  const clampedLembarTab = Math.min(activeLembarTab, naskah.lembar.length - 1)
+  const activeLembar = naskah.lembar[clampedLembarTab] ?? null
   const isFirstStep = activeStepIndex === 0
   const isLastStep = activeStepIndex === steps.length - 1
 
@@ -136,19 +159,58 @@ export default function NaskahEditor({
 
   const patch = (p: Partial<LontarNaskah>) => setNaskah((n) => ({ ...n, ...p }))
 
+  // "aksara target" bisa nunjuk ke kata (id kata) atau ke teks-ayat-utuh
+  // (id ayat + sufiks ':full') — dua-duanya dituju lewat focusedWord yang sama.
+  const fullVerseTargetId = (vid: string) => `${vid}:full`
+
   function insertAksara(char: string) {
     if (!focusedWord) {
-      toast('Klik dulu kolom "Aksara" pada kata yang ingin diisi.', 'info')
+      toast('Klik dulu kolom "Aksara" yang ingin diisi.', 'info')
       return
     }
     setNaskah((n) => ({
       ...n,
       lembar: n.lembar.map((l) => ({
         ...l,
-        verses: l.verses.map((v) => ({
-          ...v,
-          words: v.words.map((w) => (w.id === focusedWord ? { ...w, aksara: w.aksara + char } : w)),
-        })),
+        verses: l.verses.map((v) =>
+          fullVerseTargetId(v.id) === focusedWord
+            ? { ...v, verseAksara: (v.verseAksara ?? '') + char }
+            : { ...v, words: v.words.map((w) => (w.id === focusedWord ? { ...w, aksara: w.aksara + char } : w)) }
+        ),
+      })),
+    }))
+  }
+
+  function backspaceAksara() {
+    if (!focusedWord) return
+    setNaskah((n) => ({
+      ...n,
+      lembar: n.lembar.map((l) => ({
+        ...l,
+        verses: l.verses.map((v) =>
+          fullVerseTargetId(v.id) === focusedWord
+            ? { ...v, verseAksara: (v.verseAksara ?? '').slice(0, -1) }
+            : { ...v, words: v.words.map((w) => (w.id === focusedWord ? { ...w, aksara: w.aksara.slice(0, -1) } : w)) }
+        ),
+      })),
+    }))
+  }
+
+  function spaceAksara() {
+    insertAksara(' ')
+  }
+
+  function clearAksara() {
+    if (!focusedWord) return
+    setNaskah((n) => ({
+      ...n,
+      lembar: n.lembar.map((l) => ({
+        ...l,
+        verses: l.verses.map((v) =>
+          fullVerseTargetId(v.id) === focusedWord
+            ? { ...v, verseAksara: '' }
+            : { ...v, words: v.words.map((w) => (w.id === focusedWord ? { ...w, aksara: '' } : w)) }
+        ),
       })),
     }))
   }
@@ -160,7 +222,8 @@ export default function NaskahEditor({
   const addLembar = () => {
     const newIndex = naskah.lembar.length
     patch({ lembar: [...naskah.lembar, emptyLembar(newIndex + 1)] })
-    navigateToStep(1 + newIndex) // lompat langsung ke lembar baru
+    setActiveLembarTab(newIndex) // lompat langsung ke tab lembar baru
+    navigateToStep(1) // step "Transkripsi & Aksara"
   }
 
   const removeLembar = async (lid: string) => {
@@ -169,7 +232,7 @@ export default function NaskahEditor({
     if (!ok) return
     const next = naskah.lembar.filter((l) => l.id !== lid).map((l, i) => ({ ...l, lembarNumber: i + 1 }))
     patch({ lembar: next })
-    setActiveStepIndex((i) => Math.min(i, next.length + 1))
+    setActiveLembarTab((t) => Math.min(t, next.length - 1))
   }
 
   // ── verse ops (scoped ke lembar aktif) ──
@@ -238,446 +301,496 @@ export default function NaskahEditor({
     onSave(buildClean(naskah))
   }
 
-  function handleFinalize() {
-    if (!validate()) {
-      toast('Masih ada yang perlu dilengkapi di langkah "Info Dasar" — lihat tanda merah.', 'error')
-      goToFirstError()
-      return
+  const focusedLabel = (() => {
+    if (!focusedWord || !activeLembar) return undefined
+    for (const v of activeLembar.verses) {
+      if (fullVerseTargetId(v.id) === focusedWord) return `Ayat ${v.verseNumber} · Teks Aksara Kuno`
+      const idx = v.words.findIndex((w) => w.id === focusedWord)
+      if (idx !== -1) return `Ayat ${v.verseNumber} · Kata ${idx + 1}`
     }
-    const withFlag = { ...naskah, finalized: true }
-    setNaskah(withFlag)
-    onSave(buildClean(withFlag))
+    return undefined
+  })()
+
+  // Skrip default papan aksara mengikuti "Jenis Aksara Utama" naskah — tetap bisa di-switch manual.
+  const defaultScript: 'sunda' | 'pegon' = (naskah.aksaraType ?? '').toLowerCase().includes('pegon') ? 'pegon' : 'sunda'
+
+  function focusAndOpenKeyboard(id: string) {
+    setFocusedWord(id)
+    setShowKeyboard(true)
   }
 
   return (
-    <div>
-      {/* Sticky action bar */}
-      <div
-        className="wizard-topbar"
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 20,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1rem 0',
-          background: 'var(--bone)',
-          borderBottom: '1px solid var(--border)',
-          marginBottom: '1.5rem',
-        }}
-      >
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: 900 }}>
-          {initial.title ? 'Edit Arsip' : 'Arsip Baru'}
-        </span>
-        <div className="wizard-topbar-actions" style={{ display: 'flex', gap: '0.6rem' }}>
+    <div className="space-y-6 font-mono">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-[#FFFDF9] p-5 border border-[#DCD3C1] rounded-sm shadow-sm sticky top-0 z-20">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A7144] block mb-1">
+            Editor Filologi — Langkah {activeStepIndex + 1} dari {steps.length}
+          </span>
+          <h2 className="text-2xl font-['Playfair_Display',serif] font-bold text-[#1A1816]">
+            {naskah.title || (initial.title ? 'Edit Arsip' : 'Arsip Baru')}
+          </h2>
+        </div>
+        <div className="flex items-center gap-2">
           <QRCodeButton url={typeof window !== 'undefined' ? `${window.location.origin}/arsip/${naskah.id}` : ''} filename={naskah.id} label="QR Kode" />
-          <Button variant="outline" onClick={onCancel}>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 bg-[#EAE3D3] hover:bg-[#DDD2BA] text-[#4A433A] font-semibold text-xs rounded-sm transition-colors cursor-pointer"
+          >
             Batal
-          </Button>
-          <Button variant="solid" onClick={handleSave}>
-            ✓ Simpan
-          </Button>
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#8A7144] hover:bg-[#725C34] text-white font-semibold text-xs rounded-sm transition-all cursor-pointer shadow-sm"
+          >
+            <Save className="w-4 h-4" />
+            Simpan Arsip
+          </button>
         </div>
       </div>
 
-      {/* ============================================================ */}
-      {/* STEPPER — alur kaya form pendaftaran: satu langkah kelihatan  */}
-      {/* dalam satu waktu, biar ga numpuk & bikin pusing.              */}
-      {/* ============================================================ */}
-      <p style={{ fontFamily: mono, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--warm)', marginBottom: '0.75rem' }}>
-        Langkah {activeStepIndex + 1} dari {steps.length} — {step.label}
-      </p>
-      <div style={{ display: 'flex', alignItems: 'flex-start', overflowX: 'auto', paddingBottom: '1.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+      {/* Stepper — tab datar, bukan lingkaran nomor */}
+      <div className="bg-[#FFFDF9] p-1.5 border border-[#DCD3C1] rounded-sm flex gap-1.5 overflow-x-auto">
         {steps.map((s, i) => {
           const hasError = s.kind === 'info' && !!errors.title
+          const isActive = i === activeStepIndex
           return (
-          <div key={s.key} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             <button
+              key={s.key}
+              type="button"
               onClick={() => navigateToStep(i)}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.6rem' }}
+              className={`flex-1 min-w-[120px] px-4 py-2.5 rounded-sm text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-colors cursor-pointer border ${
+                hasError
+                  ? 'border-red-400 bg-red-50 text-red-600'
+                  : isActive
+                    ? 'bg-[#8A7144] text-white border-[#8A7144]'
+                    : 'bg-transparent text-[#8A8172] border-transparent hover:bg-[#F3EFE4] hover:text-[#2C2825]'
+              }`}
             >
-              <span
-                style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: `${hasError ? 2 : 1}px solid ${hasError ? '#a03434' : i <= activeStepIndex ? 'var(--charcoal)' : 'var(--border)'}`,
-                  background: hasError ? 'rgba(160,52,52,0.08)' : i === activeStepIndex ? 'var(--charcoal)' : 'transparent',
-                  color: hasError ? '#a03434' : i === activeStepIndex ? 'var(--bone)' : 'var(--charcoal)',
-                  fontFamily: mono,
-                  fontSize: '12px',
-                  flexShrink: 0,
-                  transition: 'background 0.2s, border-color 0.2s',
-                }}
-              >
-                {hasError ? '!' : i < activeStepIndex ? '✓' : i + 1}
-              </span>
-              <span
-                style={{
-                  fontFamily: mono,
-                  fontSize: '10px',
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  color: hasError ? '#a03434' : i === activeStepIndex ? 'var(--charcoal)' : 'var(--warm)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {s.label}
-              </span>
+              {hasError ? '⚠ ' : ''}{i + 1}. {s.label}
             </button>
-            {i < steps.length - 1 && (
-              <div style={{ width: '28px', height: '1px', background: 'var(--border)', marginTop: '-19px', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'var(--charcoal)',
-                    transform: `scaleX(${i < activeStepIndex ? 1 : 0})`,
-                    transformOrigin: 'left',
-                    transition: 'transform 0.35s ease',
-                  }}
-                />
-              </div>
-            )}
-          </div>
           )
         })}
       </div>
 
-      <div ref={contentRef}>
-      {/* ============================================================ */}
-      {/* STEP: INFO DASAR */}
-      {/* ============================================================ */}
-      {step.kind === 'info' && (
-        <div>
-          <SectionTitle>Info Dasar Naskah</SectionTitle>
-          <div className="wizard-info-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1.5rem' }}>
-            <Field label="Judul Arsip" required error={errors.title}>
-              <Input
-                ref={titleInputRef}
-                value={naskah.title}
-                invalid={!!errors.title}
-                onChange={(e) => {
-                  patch({ title: e.target.value })
-                  if (errors.title) setErrors((er) => ({ ...er, title: undefined }))
-                }}
-                placeholder="Carita Parahyangan"
+      <div ref={contentRef} className="space-y-6">
+        {/* ============================================================ */}
+        {/* STEP: INFO DASAR */}
+        {/* ============================================================ */}
+        {step.kind === 'info' && (
+          <div className="bg-[#FFFDF9] p-6 border border-[#DCD3C1] rounded-sm shadow-sm space-y-4">
+            <div className="border-b border-[#EAE3D3] pb-3">
+              <h3 className="text-xl font-['Playfair_Display',serif] font-bold text-[#1A1816]">1. Info Dasar Naskah</h3>
+              <p className="text-xs text-[#6B5E4C] mt-0.5">Identitas naskah, sumber, dan sampul katalog.</p>
+            </div>
+
+            <div className="bg-[#F9F6EE] p-4 border border-[#D5C9B2] rounded-sm">
+              <KoleksiPhotoUpload
+                label="Gambar Sampul Utama (Sampul Katalog)"
+                value={naskah.coverImage}
+                onChange={(url) => patch({ coverImage: url })}
+                hint="Tampil di daftar Arsip & halaman baca."
               />
-            </Field>
-            <Field label="Jenis Aksara">
-              <Input value={naskah.aksaraType ?? ''} onChange={(e) => patch({ aksaraType: e.target.value })} placeholder="Aksara Sunda Kuno" />
-            </Field>
-            <Field label="Sumber / Koleksi">
-              <Input value={naskah.sumber} onChange={(e) => patch({ sumber: e.target.value })} placeholder="Museum Talaga Manggung" />
-            </Field>
-            <Field label="Tahun / Periode">
-              <Input value={naskah.tahun} onChange={(e) => patch({ tahun: e.target.value })} placeholder="Abad ke-16 M" />
-            </Field>
-          </div>
+            </div>
 
-          <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontFamily: mono, fontSize: '13px', color: 'var(--charcoal)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={naskah.published ?? true} onChange={(e) => patch({ published: e.target.checked })} />
-              Tampilkan di situs publik (jika tidak dicentang = draft)
-            </label>
-          </div>
-
-          <ImageUpload label="Gambar Sampul" value={naskah.coverImage} onChange={(url) => patch({ coverImage: url })} />
-
-          <Field label="Sinopsis" hint="Ringkasan singkat naskah — tampil di kartu beranda & halaman baca.">
-            <Textarea value={naskah.sinopsis ?? ''} onChange={(e) => patch({ sinopsis: e.target.value })} placeholder="Ringkasan singkat isi naskah…" style={{ minHeight: '90px' }} />
-          </Field>
-
-          {/* ── Galeri Foto Naskah ── */}
-          <SectionTitle>Galeri Foto</SectionTitle>
-          <p style={{ fontFamily: mono, fontSize: '12px', color: 'var(--warm)', marginBottom: '1rem', lineHeight: 1.6 }}>
-            Foto tambahan naskah — tampil sebagai galeri di halaman baca. Cukup foto saja; video &amp; model 3D
-            dipakai untuk artefak fisik di menu Koleksi. Foto scan tiap lembar diisi di langkah Lembar.
-          </p>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
-            {(naskah.images ?? []).map((img, idx) => (
-              <div key={idx} style={{ position: 'relative', width: '140px' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img}
-                  alt={`Foto ${idx + 1}`}
-                  style={{ width: '140px', height: '140px', objectFit: 'cover', border: '1px solid var(--border)', borderRadius: '8px' }}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <NField label="Judul Naskah" required error={errors.title}>
+                <input
+                  ref={titleInputRef}
+                  value={naskah.title}
+                  onChange={(e) => {
+                    patch({ title: e.target.value })
+                    if (errors.title) setErrors((er) => ({ ...er, title: undefined }))
+                  }}
+                  placeholder="Carita Parahyangan"
+                  className={inputCls(!!errors.title)}
                 />
+              </NField>
+              <NField label="Jenis Aksara Utama">
+                <select value={naskah.aksaraType ?? 'Aksara Sunda Kuno'} onChange={(e) => patch({ aksaraType: e.target.value })} className={inputCls()}>
+                  <option value="Aksara Sunda Kuno">Aksara Sunda Kuno</option>
+                  <option value="Pegon">Arab Pegon</option>
+                  <option value="Hanacaraka">Hanacaraka / Cacarakan</option>
+                  <option value="Latin">Latin / Transliterasi</option>
+                </select>
+              </NField>
+              <NField label="Sumber / Koleksi">
+                <input value={naskah.sumber} onChange={(e) => patch({ sumber: e.target.value })} placeholder="Museum Talaga Manggung" className={inputCls()} />
+              </NField>
+              <NField label="Tahun / Periode">
+                <input value={naskah.tahun} onChange={(e) => patch({ tahun: e.target.value })} placeholder="Abad ke-16 M" className={inputCls()} />
+              </NField>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer w-fit bg-[#F3EFE4] px-3 py-2 rounded-sm border border-[#D5C9B2]">
+              <input type="checkbox" checked={naskah.published ?? true} onChange={(e) => patch({ published: e.target.checked })} className="w-3.5 h-3.5 accent-[#8A7144] cursor-pointer" />
+              <span className="text-xs font-semibold text-[#2C2825]">Tampilkan di situs publik (kalau tidak dicentang = draft)</span>
+            </label>
+
+            <NField label="Sinopsis" hint="Ringkasan singkat naskah — tampil di kartu katalog & halaman baca.">
+              <textarea
+                rows={3}
+                value={naskah.sinopsis ?? ''}
+                onChange={(e) => patch({ sinopsis: e.target.value })}
+                placeholder="Ringkasan singkat isi naskah…"
+                className={inputCls() + ' leading-relaxed'}
+              />
+            </NField>
+
+          </div>
+        )}
+
+        {/* ============================================================ */}
+        {/* STEP: TRANSKRIPSI & AKSARA (tab per lembar) */}
+        {/* ============================================================ */}
+        {step.kind === 'transkripsi' && activeLembar && (
+          <div className="space-y-5">
+            {/* Papan Aksara — kartu toggle */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[#F9F6EE] border border-[#D5C9B2] rounded-sm shadow-sm">
+              <div>
+                <strong className="text-[#8A7144] block font-['Playfair_Display',serif] text-sm">
+                  Papan Aksara Sunda Virtual (Keyboard Melayang)
+                </strong>
+                <p className="text-[11px] text-[#6B5E4C] mt-0.5">
+                  Gunakan papan ketik virtual yang melayang di pojok layar. Keyboard akan otomatis mengarah ke kolom
+                  input Aksara apa pun yang sedang Anda pilih/klik.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowKeyboard((o) => !o)}
+                className={`px-3 py-1.5 font-bold text-xs rounded-sm cursor-pointer flex items-center gap-1.5 transition-colors shadow-sm shrink-0 ${
+                  showKeyboard ? 'bg-[#8A7144] text-white' : 'bg-[#EAE3D3] text-[#3D3730] hover:bg-[#E0D7C6]'
+                }`}
+              >
+                <Keyboard className="w-4 h-4" />
+                {showKeyboard ? 'Sembunyikan Keyboard' : 'Aktifkan Keyboard Melayang'}
+              </button>
+            </div>
+
+            {/* Kelola Lembar Lontar */}
+            <div className="p-4 bg-[#F9F6EE] border border-[#D5C9B2] rounded-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#EAE3D3] pb-3">
+                <div>
+                  <span className="text-[10px] font-bold text-[#8A7144] uppercase tracking-wider block">
+                    Kelola Lembar Lontar &amp; Foto Scan Digital HD ({naskah.lembar.length} Lembar)
+                  </span>
+                  <p className="text-[11px] text-[#6B5E4C] mt-0.5">
+                    Pilih lembar lontar untuk mengedit foto scan, judul lembar, dan daftar ayat.
+                  </p>
+                </div>
                 <button
-                  onClick={() => patch({ images: (naskah.images ?? []).filter((_, i) => i !== idx) })}
-                  title="Hapus foto"
-                  style={{ position: 'absolute', top: 6, right: 6, background: 'var(--charcoal)', color: 'var(--bone)', border: 'none', borderRadius: '4px', width: 24, height: 24, cursor: 'pointer', fontSize: 13 }}
+                  type="button"
+                  onClick={addLembar}
+                  className="px-3 py-1.5 bg-[#8A7144] hover:bg-[#725C34] text-white font-bold text-xs rounded-sm flex items-center gap-1 cursor-pointer shrink-0 shadow-sm"
                 >
-                  ×
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Tambah Lembar Lontar</span>
                 </button>
-                <span style={{ display: 'block', fontFamily: mono, fontSize: '10px', color: 'var(--warm)', marginTop: '0.35rem', textAlign: 'center' }}>
-                  Foto {idx + 1}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <ImageUpload
-            label="+ Tambah Foto"
-            value={undefined}
-            onChange={(url) => url && patch({ images: [...(naskah.images ?? []), url] })}
-          />
-        </div>
-      )}
-
-      {/* ============================================================ */}
-      {/* STEP: LEMBAR (satu halaman per langkah) */}
-      {/* ============================================================ */}
-      {step.kind === 'lembar' && activeLembar && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <SectionTitle>Lembar {step.lembarIndex! + 1} — Scan &amp; Transkripsi</SectionTitle>
-            {!locked && naskah.lembar.length > 1 && (
-              <Button variant="danger" onClick={() => removeLembar(activeLembar.id)}>Hapus Lembar Ini</Button>
-            )}
-          </div>
-
-          <ImageUpload
-            label={`Foto Scan — Lembar ${step.lembarIndex! + 1}`}
-            value={activeLembar.scanImage}
-            onChange={(url) => updateLembar(activeLembar.id, { scanImage: url })}
-          />
-
-          <div
-            style={{
-              background: 'rgba(200,169,110,0.06)',
-              border: '1px solid var(--border)',
-              borderRadius: '8px',
-              padding: '0.75rem 1rem',
-              fontFamily: mono,
-              fontSize: '13px',
-              color: 'var(--warm)',
-              lineHeight: 1.7,
-              marginBottom: '1rem',
-            }}
-          >
-            Cara isi: klik kolom <b>Aksara</b> pada sebuah kata, lalu gunakan Papan Aksara Sunda di bawah untuk menyisipkan
-            karakter. Isi juga <b>Latin</b>, <b>Terjemah</b>, dan <b>Kelas kata</b>. Nomor ayat otomatis berurutan
-            untuk seluruh buku saat disimpan.
-          </div>
-          <AksaraKeyboard onInsert={insertAksara} />
-
-          {activeLembar.verses.map((verse) => (
-            <Card key={verse.id} style={{ marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '19px', fontWeight: 900 }}>
-                  Ayat {verse.verseNumber}
-                </span>
-                {!locked && (
-                  <Button variant="danger" onClick={() => removeVerse(verse.id)}>
-                    Hapus Ayat
-                  </Button>
-                )}
               </div>
 
-              <div style={{ overflowX: 'auto' }}>
-                <div style={{ minWidth: '620px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr 1.5fr 1fr 40px', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                    {['Aksara', 'Latin', 'Terjemah', 'Kelas', ''].map((h) => (
-                      <span key={h} style={{ fontFamily: mono, fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--warm)' }}>
-                        {h}
-                      </span>
-                    ))}
-                  </div>
-                  {verse.words.map((word) => (
-                    <div key={word.id} style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr 1.5fr 1fr 40px', gap: '0.5rem', marginBottom: '0.4rem', alignItems: 'center' }}>
-                      <Input
-                        value={word.aksara}
-                        onFocus={() => setFocusedWord(word.id)}
-                        onChange={(e) => updateWord(verse.id, word.id, { aksara: e.target.value })}
-                        placeholder="ᮃᮓᮤ"
-                        style={{
-                          fontSize: '22px',
-                          fontFamily: 'serif',
-                          borderColor: focusedWord === word.id ? 'var(--charcoal)' : 'var(--border)',
-                          borderWidth: focusedWord === word.id ? '2px' : '1px',
-                        }}
-                      />
-                      <Input value={word.latin} onChange={(e) => updateWord(verse.id, word.id, { latin: e.target.value })} placeholder="Adi" />
-                      <Input value={word.terjemah} onChange={(e) => updateWord(verse.id, word.id, { terjemah: e.target.value })} placeholder="Permulaan" />
-                      <Select value={word.kelas} onChange={(e) => updateWord(verse.id, word.id, { kelas: e.target.value })}>
-                        {kelasKataOptions.map((k) => (
-                          <option key={k} value={k}>{k}</option>
-                        ))}
-                      </Select>
-                      <button
-                        onClick={() => removeWord(verse.id, word.id)}
-                        title="Hapus kata"
-                        style={{ border: '1px solid var(--border)', borderRadius: '6px', background: 'transparent', cursor: 'pointer', height: '38px', color: '#a03434' }}
+              {/* Tab lembar — wrap, bukan scroll horizontal */}
+              <div className="flex flex-wrap gap-2">
+                {naskah.lembar.map((l, i) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => setActiveLembarTab(i)}
+                    className={`px-3 py-1.5 font-bold text-xs rounded-sm cursor-pointer border transition-all flex items-center gap-1.5 ${
+                      i === clampedLembarTab ? 'bg-[#8A7144] text-white border-[#8A7144] shadow-sm' : 'bg-white text-[#5C4D32] border-[#DCD3C1] hover:bg-[#F3EFE4]'
+                    }`}
+                  >
+                    <span>{l.judul ? `Lembar ${i + 1}: ${l.judul}` : `Lembar ${i + 1}`}</span>
+                    {naskah.lembar.length > 1 && (
+                      <span
+                        onClick={(e) => { e.stopPropagation(); removeLembar(l.id) }}
+                        title="Hapus Lembar Ini"
+                        className={`p-0.5 rounded-sm ${i === clampedLembarTab ? 'hover:text-red-200' : 'hover:text-red-600'}`}
                       >
-                        ×
+                        <X className="w-3 h-3" />
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Detail lembar terpilih */}
+              <div className="p-3 bg-white border border-[#DCD3C1] rounded-sm space-y-4">
+                <NField label="Judul Lembar Lontar Ini">
+                  <input
+                    value={activeLembar.judul ?? ''}
+                    onChange={(e) => updateLembar(activeLembar.id, { judul: e.target.value })}
+                    placeholder={`Lembar ${clampedLembarTab + 1}: ...`}
+                    className={`${inputCls()} font-serif font-bold text-[#1A1816]`}
+                  />
+                </NField>
+
+                <div className="p-4 bg-[#F9F6EE] border border-[#D5C9B2] rounded-sm">
+                  <KoleksiPhotoUpload
+                    label="Foto Scan HD Daun Lontar"
+                    value={activeLembar.scanImage}
+                    onChange={(url) => updateLembar(activeLembar.id, { scanImage: url })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Ayat editor */}
+            <div className="bg-[#FFFDF9] p-6 border border-[#DCD3C1] rounded-sm shadow-sm space-y-4">
+              <div className="flex items-center justify-between gap-3 border-b border-[#EAE3D3] pb-3">
+                <h4 className="text-base font-['Playfair_Display',serif] font-bold text-[#1A1816] flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-[#8A7144]" />
+                  Ayat-Ayat pada {activeLembar.judul ? `Lembar ${clampedLembarTab + 1}: ${activeLembar.judul}` : `Lembar ${clampedLembarTab + 1}`}
+                </h4>
+                <button
+                  type="button"
+                  onClick={addVerse}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#8A7144] hover:bg-[#725C34] text-white text-xs font-bold rounded-sm cursor-pointer transition-colors shadow-sm shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Tambah Ayat Baru
+                </button>
+              </div>
+
+              {activeLembar.verses.map((verse) => (
+                <div key={verse.id} className="p-4 bg-[#F9F6EE] border border-[#D5C9B2] rounded-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-['Playfair_Display',serif] font-bold text-[#1A1816]">Ayat ke-{verse.verseNumber}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-[#7A7163]">{verse.words.length} Kata Terurai</span>
+                      <button
+                        type="button"
+                        onClick={() => removeVerse(verse.id)}
+                        title="Hapus ayat"
+                        className="p-1.5 text-red-700 hover:bg-red-50 rounded-sm cursor-pointer transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  ))}
-                </div>
-              </div>
-              <Button variant="outline" onClick={() => addWord(verse.id)} style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
-                + Tambah Kata
-              </Button>
+                  </div>
 
-              <Field label="Terjemah Ayat (kalimat penuh)">
-                <Textarea value={verse.terjemahVerse} onChange={(e) => updateVerse(verse.id, { terjemahVerse: e.target.value })} placeholder="Permulaan dari bumi Sunda." style={{ minHeight: '56px' }} />
-              </Field>
-              <Field label="Makna & Tafsir" hint="Opsional — ayat dengan makna diberi penanda di halaman baca.">
-                <Textarea value={verse.makna ?? ''} onChange={(e) => updateVerse(verse.id, { makna: e.target.value })} />
-              </Field>
-              <Field label="Catatan Filologi" hint="Opsional.">
-                <Textarea value={verse.catatan ?? ''} onChange={(e) => updateVerse(verse.id, { catatan: e.target.value })} style={{ minHeight: '56px' }} />
-              </Field>
-            </Card>
-          ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                    <NField label="Teks Aksara Kuno">
+                      <div className="relative">
+                        <input
+                          value={verse.verseAksara ?? ''}
+                          onFocus={() => focusAndOpenKeyboard(fullVerseTargetId(verse.id))}
+                          onChange={(e) => updateVerse(verse.id, { verseAksara: e.target.value })}
+                          placeholder="ᮃᮓᮤ ᮔᮤᮀ ᮘᮥᮙᮤ…"
+                          className={`${inputClsWhite()} font-serif text-lg pr-28 ${focusedWord === fullVerseTargetId(verse.id) ? 'border-2 border-[#8A7144]' : ''}`}
+                        />
+                        {focusedWord === fullVerseTargetId(verse.id) && (
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-[#8A7144] font-bold flex items-center gap-1 bg-[#F9F6EE] px-1.5 py-0.5 rounded-sm border border-[#D5C9B2] select-none">
+                            <Sparkles className="w-2.5 h-2.5 animate-pulse" />
+                            Papan Ketik Aktif
+                          </span>
+                        )}
+                      </div>
+                    </NField>
+                    <NField label="Transliterasi Latin">
+                      <input
+                        value={verse.verseLatin ?? ''}
+                        onChange={(e) => updateVerse(verse.id, { verseLatin: e.target.value })}
+                        placeholder="Adi ning bumi Talaga Manggung"
+                        className={`${inputClsWhite()} italic`}
+                      />
+                    </NField>
+                  </div>
 
-          {!locked && (
-            <Button variant="outline" onClick={addVerse} style={{ width: '100%', padding: '0.9rem' }}>
-              + Tambah Ayat di Lembar Ini
-            </Button>
-          )}
+                  <NField label="Terjemahan Bahasa Indonesia">
+                    <textarea rows={2} value={verse.terjemahVerse} onChange={(e) => updateVerse(verse.id, { terjemahVerse: e.target.value })} placeholder="Inilah permulaan penceritaan tanah dan peradaban…" className={inputClsWhite()} />
+                  </NField>
+                  <NField label="Catatan Kebahasaan & Filologi">
+                    <textarea rows={2} value={verse.catatan ?? ''} onChange={(e) => updateVerse(verse.id, { catatan: e.target.value })} className={inputClsWhite()} />
+                  </NField>
+                  <NField label="Makna & Tafsir">
+                    <textarea rows={2} value={verse.makna ?? ''} onChange={(e) => updateVerse(verse.id, { makna: e.target.value })} className={inputClsWhite()} />
+                  </NField>
 
-          {/* Sudah beres transkripsi lembar ini — lanjut ke lembar berikutnya atau ke Review */}
-          {!locked && step.lembarIndex === naskah.lembar.length - 1 && (
-            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--border)' }}>
-              <p style={{ fontFamily: mono, fontSize: '12px', color: 'var(--warm)', lineHeight: 1.6, marginBottom: '1rem' }}>
-                Sudah beres isi Lembar {step.lembarIndex! + 1}? Kalau masih ada daun lontar berikutnya yang mau
-                ditranskripsi, lanjut ke lembar baru. Kalau ini lembar terakhir, langsung ke Review untuk finalisasi.
-              </p>
-              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <Button variant="solid" onClick={addLembar}>
-                  + Lanjut ke Lembar {step.lembarIndex! + 2}
-                </Button>
-                <Button variant="outline" onClick={() => navigateToStep(steps.length - 1)}>
-                  Ini Lembar Terakhir — Lanjut ke Review →
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ============================================================ */}
-      {/* STEP: REVIEW & FINALISASI */}
-      {/* ============================================================ */}
-      {step.kind === 'review' && (
-        <div>
-          <SectionTitle>Review Sebelum Disimpan</SectionTitle>
-
-          {locked ? (
-            <div
-              style={{
-                border: '1px solid var(--border)',
-                borderRadius: '10px',
-                padding: '1rem 1.25rem',
-                marginBottom: '1.25rem',
-                background: 'rgba(200,169,110,0.06)',
-              }}
-            >
-              <div className="wizard-review-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.6rem' }}>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.3rem 0.7rem',
-                    borderRadius: '999px',
-                    background: 'var(--charcoal)',
-                    color: 'var(--bone)',
-                    fontFamily: mono,
-                    fontSize: '10px',
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  <LockIcon size={11} /> Struktur Terkunci
-                </span>
-                <Button
-                  variant="ghost"
-                  onClick={() => patch({ finalized: false })}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-                >
-                  <UnlockIcon size={11} /> Buka Kunci
-                </Button>
-              </div>
-              <p style={{ fontFamily: mono, fontSize: '12px', color: 'var(--warm)', lineHeight: 1.6 }}>
-                Naskah ini sudah difinalisasi — jumlah lembar &amp; ayat terkunci. Isi teks tetap bisa diedit dari langkah Lembar.
-              </p>
-            </div>
-          ) : (
-            <p style={{ fontFamily: mono, fontSize: '13px', color: 'var(--warm)', lineHeight: 1.7, marginBottom: '1.5rem', maxWidth: '620px' }}>
-              Cek ringkasan tiap lembar di bawah. Klik "Edit" untuk kembali ke lembar tertentu, atau tambah lembar baru
-              kalau masih ada halaman yang belum dimasukkan. Klik <b>Selesai &amp; Finalisasi</b> kalau naskah sudah lengkap —
-              strukturnya akan terkunci tapi isi teks tetap bisa diedit nanti.
-            </p>
-          )}
-
-          <div style={{ border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', marginBottom: '1.5rem' }}>
-            {naskah.lembar.map((l, i) => (
-              <div
-                key={l.id}
-                className="wizard-review-row"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '1rem',
-                  padding: '1rem 1.25rem',
-                  borderBottom: i < naskah.lembar.length - 1 ? '1px solid var(--border)' : 'none',
-                }}
-              >
-                <div>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: 700 }}>Lembar {i + 1}</div>
-                  <div style={{ fontFamily: mono, fontSize: '11px', color: 'var(--warm)', marginTop: '2px' }}>
-                    {l.verses.length} ayat{l.scanImage ? ' · scan terpasang' : ' · belum ada scan'}
+                  <div className="pt-2 border-t border-dashed border-[#DCD3C1]">
+                    <div className="flex items-center justify-between mb-2">
+                      <SectionLabel>Uraian Tafsir Kata per Kata ({verse.words.length} kata)</SectionLabel>
+                      <button
+                        type="button"
+                        onClick={() => addWord(verse.id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[#DCD3C1] hover:bg-[#F3EFE4] text-[#2C2825] text-xs font-semibold rounded-sm transition-colors cursor-pointer shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Tambah Kata
+                      </button>
+                    </div>
+                    {verse.words.length > 0 && (
+                      <div className="space-y-2">
+                        {verse.words.map((word) => (
+                          <div key={word.id} className="p-2 bg-white border border-[#DCD3C1] rounded-sm grid grid-cols-1 sm:grid-cols-5 gap-2 items-center text-xs">
+                            <div>
+                              <span className="text-[9px] text-[#7A7163] font-bold block mb-0.5">Aksara:</span>
+                              <div className="relative">
+                                <input
+                                  value={word.aksara}
+                                  onFocus={() => focusAndOpenKeyboard(word.id)}
+                                  onChange={(e) => updateWord(verse.id, word.id, { aksara: e.target.value })}
+                                  placeholder="ᮃᮓᮤ"
+                                  className={`w-full p-1.5 bg-[#F9F6EE] border rounded-sm font-serif text-sm font-bold text-[#8A7144] outline-none transition-all ${
+                                    focusedWord === word.id ? 'ring-2 ring-[#8A7144] border-transparent' : 'border-[#DCD3C1] hover:border-[#8A7144]/60'
+                                  }`}
+                                />
+                                {focusedWord === word.id && (
+                                  <span className="absolute right-1.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-green-500 animate-ping" title="Input Aktif" />
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-[#7A7163] font-bold block mb-0.5">Transliterasi:</span>
+                              <input value={word.latin} onChange={(e) => updateWord(verse.id, word.id, { latin: e.target.value })} placeholder="Adi" className="w-full p-1.5 bg-[#F9F6EE] border border-[#DCD3C1] rounded-sm font-serif italic text-xs outline-none" />
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-[#7A7163] font-bold block mb-0.5">Arti Indonesia:</span>
+                              <input value={word.terjemah} onChange={(e) => updateWord(verse.id, word.id, { terjemah: e.target.value })} placeholder="Permulaan" className="w-full p-1.5 bg-[#F9F6EE] border border-[#DCD3C1] rounded-sm text-xs outline-none" />
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-[#7A7163] font-bold block mb-0.5">Kelas Kata:</span>
+                              <select value={word.kelas} onChange={(e) => updateWord(verse.id, word.id, { kelas: e.target.value })} className="w-full p-1.5 bg-[#F9F6EE] border border-[#DCD3C1] rounded-sm text-xs outline-none">
+                                {kelasKataOptions.map((k) => (
+                                  <option key={k} value={k}>{k}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="flex items-center justify-end">
+                              <button
+                                type="button"
+                                onClick={() => removeWord(verse.id, word.id)}
+                                title="Hapus kata"
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-sm cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <Button variant="outline" onClick={() => navigateToStep(1 + i)}>Edit</Button>
-                  {!locked && naskah.lembar.length > 1 && (
-                    <Button variant="danger" onClick={() => removeLembar(l.id)}>Hapus</Button>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+        )}
 
-          {!locked && (
-            <Button variant="outline" onClick={addLembar} style={{ width: '100%', padding: '0.9rem', marginBottom: '1.5rem' }}>
+        {/* ============================================================ */}
+        {/* STEP: REVIEW & FINALISASI */}
+        {/* ============================================================ */}
+        {step.kind === 'review' && (
+          <div className="bg-[#FFFDF9] p-6 border border-[#DCD3C1] rounded-sm shadow-sm space-y-4">
+            <div className="border-b border-[#EAE3D3] pb-3">
+              <h3 className="text-xl font-['Playfair_Display',serif] font-bold text-[#1A1816] flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-[#8A7144]" />
+                3. Review &amp; Finalisasi
+              </h3>
+              <p className="text-xs text-[#6B5E4C] mt-0.5">Cek ringkasan sebelum disimpan ke situs publik.</p>
+            </div>
+
+            <p className="text-xs text-[#6B5E4C] leading-relaxed max-w-2xl">
+              Cek ringkasan tiap lembar di bawah. Klik &quot;Edit&quot; untuk kembali ke lembar tertentu, atau tambah lembar
+              baru kalau masih ada halaman yang belum dimasukkan. Klik <b>Simpan Arsip</b> kalau naskah sudah lengkap.
+            </p>
+
+            <div className="border border-[#DCD3C1] rounded-sm overflow-hidden divide-y divide-[#EAE3D3]">
+              {naskah.lembar.map((l, i) => (
+                <div key={l.id} className="flex items-center justify-between gap-4 p-4 bg-white">
+                  <div>
+                    <div className="text-base font-['Playfair_Display',serif] font-bold text-[#1A1816]">
+                      Lembar {i + 1}{l.judul ? `: ${l.judul}` : ''}
+                    </div>
+                    <div className="text-[11px] text-[#8A8172] mt-0.5">
+                      {l.verses.length} ayat &bull; {l.scanImage ? 'scan terpasang' : 'belum ada scan'}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => { setActiveLembarTab(i); navigateToStep(1) }}
+                      className="px-3 py-1.5 border border-[#DCD3C1] hover:bg-[#F3EFE4] text-[#2C2825] text-xs font-semibold rounded-sm cursor-pointer transition-colors"
+                    >
+                      Edit
+                    </button>
+                    {naskah.lembar.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeLembar(l.id)}
+                        className="p-1.5 text-red-700 hover:bg-red-50 rounded-sm cursor-pointer transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={addLembar}
+              className="w-full py-3 border-2 border-dashed border-[#D5C9B2] hover:border-[#8A7144] text-[#8A7144] text-xs font-bold rounded-sm cursor-pointer transition-colors"
+            >
               + Tambah Lembar Baru
-            </Button>
-          )}
+            </button>
 
-          <p style={{ fontFamily: mono, fontSize: '12px', color: 'var(--warm)', marginBottom: '1.5rem' }}>
-            Total: {naskah.lembar.length} lembar · {naskah.lembar.reduce((sum, l) => sum + l.verses.length, 0)} ayat
-          </p>
+            <p className="text-xs text-[#8A8172]">
+              Total: {naskah.lembar.length} lembar &bull; {naskah.lembar.reduce((sum, l) => sum + l.verses.length, 0)} ayat
+            </p>
 
-          {!locked && (
-            <Button variant="solid" onClick={handleFinalize} style={{ width: '100%', padding: '0.9rem' }}>
-              ✓ Selesai &amp; Finalisasi Naskah
-            </Button>
-          )}
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={handleSave}
+              className="w-full py-3 bg-[#8A7144] hover:bg-[#725C34] text-white font-bold text-sm rounded-sm cursor-pointer transition-colors shadow-sm flex items-center justify-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              Simpan Arsip
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* ============================================================ */}
-      {/* NAVIGASI LANGKAH */}
-      {/* ============================================================ */}
-      <div className="wizard-footer-nav" style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-        <Button variant="outline" className="wizard-nav-btn" onClick={goBack} disabled={isFirstStep}>← Kembali</Button>
-        <div style={{ display: 'flex', gap: '0.6rem' }}>
-          <Button variant="outline" onClick={onCancel}>Batal</Button>
+      {/* Panel keyboard di LUAR div ber-transform GSAP (contentRef) —
+          position:fixed jadi bener nempel ke viewport, bukan ketarik
+          ngikut container yang di-translate pas transisi step. */}
+      <AksaraKeyboardPanel
+        open={showKeyboard}
+        onClose={() => setShowKeyboard(false)}
+        onInsert={insertAksara}
+        onBackspace={backspaceAksara}
+        onSpace={spaceAksara}
+        onClearAll={clearAksara}
+        focusedLabel={focusedLabel}
+        defaultScript={defaultScript}
+      />
+
+      {/* Navigasi langkah */}
+      <div className="flex justify-between gap-2 pt-2">
+        <button
+          type="button"
+          onClick={goBack}
+          disabled={isFirstStep}
+          className="px-4 py-2 border border-[#DCD3C1] text-[#2C2825] text-xs font-semibold rounded-sm cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-[#F3EFE4]"
+        >
+          ← Kembali
+        </button>
+        <div className="flex gap-2">
+          <button type="button" onClick={onCancel} className="px-4 py-2 bg-[#EAE3D3] hover:bg-[#DDD2BA] text-[#4A433A] font-semibold text-xs rounded-sm transition-colors cursor-pointer">
+            Batal
+          </button>
           {isLastStep ? (
-            <Button variant="solid" className="wizard-nav-btn" onClick={handleSave}>✓ Simpan Arsip</Button>
+            <button type="button" onClick={handleSave} className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#8A7144] hover:bg-[#725C34] text-white font-semibold text-xs rounded-sm transition-all cursor-pointer shadow-sm">
+              <Save className="w-4 h-4" />
+              Simpan Arsip
+            </button>
           ) : (
-            <Button variant="solid" className="wizard-nav-btn" onClick={goNext}>Lanjut →</Button>
+            <button type="button" onClick={goNext} className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#8A7144] hover:bg-[#725C34] text-white font-semibold text-xs rounded-sm transition-all cursor-pointer shadow-sm">
+              Lanjut →
+            </button>
           )}
         </div>
       </div>
